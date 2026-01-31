@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#2c3e50">
+  <title>Pinochle Scorer</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- ====== Header ====== -->
+  <header class="app-header">
+    <h1>Pinochle</h1>
+    <div class="header-actions">
+      <button class="btn-icon" id="btn-theme" title="Toggle dark mode" aria-label="Toggle dark mode">&#9790;</button>
+      <button class="btn-icon" id="btn-help" title="Help" aria-label="Help">?</button>
+      <button class="btn-icon" id="btn-settings" title="Settings" aria-label="Settings">&#9881;</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- ====== Setup Screen ====== -->
+    <div id="screen-setup" class="screen active">
+      <!-- Player Count -->
+      <div class="setup-section">
+        <h2>Number of Players</h2>
+        <div class="player-count-grid" id="player-count-grid">
+          <button class="player-count-btn" data-count="2">2</button>
+          <button class="player-count-btn" data-count="3">3</button>
+          <button class="player-count-btn active" data-count="4">4</button>
+          <button class="player-count-btn" data-count="5">5</button>
+          <button class="player-count-btn" data-count="6">6</button>
+          <button class="player-count-btn" data-count="7">7</button>
+          <button class="player-count-btn" data-count="8">8</button>
+        </div>
+      </div>
+
+      <!-- Deck Type -->
+      <div class="setup-section" id="deck-type-section">
+        <h2>Deck Type</h2>
+        <div class="toggle-group">
+          <button class="toggle-btn active" data-deck="single">Single Deck</button>
+          <button class="toggle-btn" data-deck="double">Double Deck</button>
+        </div>
+      </div>
+
+      <!-- Game Type -->
+      <div class="setup-section" id="game-type-section">
+        <h2>Game Type</h2>
+        <div class="toggle-group">
+          <button class="toggle-btn active" data-gametype="individual">Individual</button>
+          <button class="toggle-btn" data-gametype="partnership">Partnership</button>
+        </div>
+      </div>
+
+      <!-- Scoring System -->
+      <div class="setup-section">
+        <h2>Scoring System</h2>
+        <div class="toggle-group">
+          <button class="toggle-btn active" data-scoring="classic">Classic</button>
+          <button class="toggle-btn" data-scoring="simplified">Simplified</button>
+        </div>
+      </div>
+
+      <!-- House Rules -->
+      <div class="setup-section">
+        <h2>House Rules</h2>
+        <div class="toggle-group" id="house-rules-group">
+          <button class="toggle-btn active" data-rules="standard">Standard</button>
+          <button class="toggle-btn" data-rules="npa">NPA</button>
+          <button class="toggle-btn" data-rules="custom">Custom</button>
+        </div>
+
+        <div class="custom-rules-panel hidden" id="custom-rules-panel">
+          <div class="custom-rule-row">
+            <span>Dix Scoring</span>
+            <label class="switch">
+              <input type="checkbox" id="rule-dix" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="custom-rule-row">
+            <span>Roundhouse as Meld</span>
+            <label class="switch">
+              <input type="checkbox" id="rule-roundhouse" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="custom-rule-row">
+            <span>Set Penalty</span>
+            <select id="rule-set-penalty">
+              <option value="lose-bid">Lose Bid Amount</option>
+              <option value="lose-bid-meld">Lose Bid + Meld</option>
+              <option value="lose-double-bid">Lose Double Bid</option>
+            </select>
+          </div>
+          <div class="custom-rule-row">
+            <span>Last Trick Bonus</span>
+            <select id="rule-last-trick">
+              <option value="0">0</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Target Score -->
+      <div class="setup-section">
+        <h2>Target Score</h2>
+        <input type="number" id="target-score" value="1000" inputmode="numeric" min="100" step="50">
+      </div>
+
+      <!-- Player Names -->
+      <div class="setup-section">
+        <h2>Players</h2>
+        <div id="player-names-list"></div>
+      </div>
+
+      <!-- Partnership Teams (shown when partnership mode) -->
+      <div class="setup-section hidden" id="partnership-section">
+        <h2>Team Assignments</h2>
+        <div id="team-assignments"></div>
+      </div>
+
+      <!-- Start Game -->
+      <button class="btn btn-primary btn-lg" id="btn-start-game" style="width: 100%; margin-top: 8px;">
+        Start Game
+      </button>
+    </div>
+
+    <!-- ====== Game Screen ====== -->
+    <div id="screen-game" class="screen game-screen">
+      <!-- Scoreboard -->
+      <div class="scoreboard" id="scoreboard">
+        <div class="scoreboard-inner" id="scoreboard-inner"></div>
+      </div>
+
+      <!-- Phase Stepper -->
+      <div class="phase-stepper" id="phase-stepper"></div>
+
+      <!-- Phase Content -->
+      <div class="phase-content" id="phase-content"></div>
+
+      <!-- Game History -->
+      <div class="game-history">
+        <button class="history-toggle" id="history-toggle">
+          <span>Round History</span>
+          <span id="history-arrow">&#9660;</span>
+        </button>
+        <div class="history-content" id="history-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== Bottom Action Bar ====== -->
+  <div class="bottom-bar hidden" id="bottom-bar">
+    <button class="btn btn-secondary" id="btn-undo">Undo</button>
+    <button class="btn btn-primary" id="btn-next-phase">Next Phase &rarr;</button>
+  </div>
+
+  <!-- ====== Help Modal ====== -->
+  <div class="modal-overlay" id="modal-help">
+    <div class="modal">
+      <button class="btn-icon modal-close" id="btn-close-help">&times;</button>
+      <h2>Pinochle Quick Reference</h2>
+      <div id="help-content">
+        <h3 class="mt-16">Game Flow</h3>
+        <p>Each round has 4 phases: <strong>Bid</strong>, <strong>Meld</strong>, <strong>Tricks</strong>, and <strong>Score</strong>.</p>
+
+        <h3 class="mt-16">Bidding</h3>
+        <p>Players bid on how many points they think they can earn. The highest bidder names trump and must meet their bid through meld + trick points.</p>
+
+        <h3 class="mt-16">Meld (Single Deck)</h3>
+        <table style="width:100%; margin-top:8px; font-size:0.875rem;">
+          <tr><td>Marriage</td><td style="text-align:right">20</td></tr>
+          <tr><td>Royal Marriage (trump)</td><td style="text-align:right">40</td></tr>
+          <tr><td>Run (A-10-K-Q-J trump)</td><td style="text-align:right">150</td></tr>
+          <tr><td>Pinochle (J&#9830; + Q&#9824;)</td><td style="text-align:right">40</td></tr>
+          <tr><td>Dix (9 of trump)</td><td style="text-align:right">10</td></tr>
+          <tr><td>Aces Around</td><td style="text-align:right">100</td></tr>
+          <tr><td>Kings Around</td><td style="text-align:right">80</td></tr>
+          <tr><td>Queens Around</td><td style="text-align:right">60</td></tr>
+          <tr><td>Jacks Around</td><td style="text-align:right">40</td></tr>
+          <tr><td>Roundhouse</td><td style="text-align:right">240</td></tr>
+        </table>
+
+        <h3 class="mt-16">Going Set</h3>
+        <p>If the bidder's meld + trick points don't meet their bid, they "go set" and lose points equal to their bid amount.</p>
+
+        <h3 class="mt-16">Winning</h3>
+        <p>First player/team to reach the target score wins!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== Settings Modal ====== -->
+  <div class="modal-overlay" id="modal-settings">
+    <div class="modal">
+      <button class="btn-icon modal-close" id="btn-close-settings">&times;</button>
+      <h2>Settings</h2>
+      <div class="flex flex-col gap-12">
+        <button class="btn btn-secondary" id="btn-export" style="width:100%">Export Game (JSON)</button>
+        <button class="btn btn-secondary" id="btn-import" style="width:100%">Import Game (JSON)</button>
+        <input type="file" id="import-file" accept=".json" class="hidden">
+        <hr style="border-color: var(--border-color)">
+        <button class="btn btn-danger" id="btn-new-game" style="width:100%">New Game</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/constants.js"></script>
+  <script src="js/game-state.js"></script>
+  <script src="js/ui-controller.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
