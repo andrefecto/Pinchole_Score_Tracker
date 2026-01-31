@@ -111,13 +111,23 @@ const HOUSE_RULE_PRESETS = {
 };
 
 const PHASES = ['bid', 'meld', 'play', 'score'];
+const PHASES_TWO_PLAYER = ['trump', 'meld', 'play', 'score'];
 
 const PHASE_LABELS = {
   bid: 'Bidding',
+  trump: 'Trump',
   meld: 'Meld',
   play: 'Tricks',
   score: 'Score',
 };
+
+function isTwoPlayerMode() {
+  return GameState.state?.config?.playerCount === 2;
+}
+
+function getPhases() {
+  return isTwoPlayerMode() ? PHASES_TWO_PLAYER : PHASES;
+}
 
 const STORAGE_KEY = 'pinochle-scorer-state';
 const THEME_STORAGE_KEY = 'pinochle-scorer-theme';

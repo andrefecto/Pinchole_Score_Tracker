@@ -333,8 +333,9 @@ const App = {
       const step = e.target.closest('[data-phase]');
       if (!step) return;
       const targetPhase = step.dataset.phase;
-      const currentIdx = PHASES.indexOf(GameState.state.currentRound.phase);
-      const targetIdx = PHASES.indexOf(targetPhase);
+      const phases = getPhases();
+      const currentIdx = phases.indexOf(GameState.state.currentRound.phase);
+      const targetIdx = phases.indexOf(targetPhase);
       // Only allow going back to completed phases
       if (targetIdx < currentIdx) {
         GameState.setPhase(targetPhase);
@@ -441,7 +442,16 @@ const App = {
     const round = GameState.state.currentRound;
     if (!round) return;
 
-    const currentIdx = PHASES.indexOf(round.phase);
+    const phases = getPhases();
+    const currentIdx = phases.indexOf(round.phase);
+
+    if (round.phase === 'trump') {
+      // Validate trump phase (2-player)
+      if (!round.trump) {
+        alert('Please select a trump suit.');
+        return;
+      }
+    }
 
     if (round.phase === 'bid') {
       // Validate bid phase
@@ -479,7 +489,7 @@ const App = {
     }
 
     // Advance to next phase
-    const nextPhase = PHASES[currentIdx + 1];
+    const nextPhase = phases[currentIdx + 1];
     GameState.setPhase(nextPhase);
     UI.renderGame();
   },

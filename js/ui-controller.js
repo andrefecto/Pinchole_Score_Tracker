@@ -42,11 +42,12 @@ const UI = {
     const container = document.getElementById('phase-stepper');
     if (!container) return;
 
-    const current = GameState.state.currentRound?.phase || 'bid';
-    const currentIdx = PHASES.indexOf(current);
+    const phases = getPhases();
+    const current = GameState.state.currentRound?.phase || phases[0];
+    const currentIdx = phases.indexOf(current);
 
     let html = '';
-    PHASES.forEach((phase, i) => {
+    phases.forEach((phase, i) => {
       let cls = '';
       if (i < currentIdx) cls = 'complete';
       else if (i === currentIdx) cls = 'active';
@@ -62,13 +63,17 @@ const UI = {
 
   // ---- Phase Content ----
   renderPhaseContent() {
-    const phase = GameState.state.currentRound?.phase || 'bid';
+    const phases = getPhases();
+    const phase = GameState.state.currentRound?.phase || phases[0];
     const container = document.getElementById('phase-content');
     if (!container) return;
 
     switch (phase) {
       case 'bid':
         this.renderBidPhase(container);
+        break;
+      case 'trump':
+        this.renderTrumpPhase(container);
         break;
       case 'meld':
         this.renderMeldPhase(container);
@@ -127,6 +132,23 @@ const UI = {
     });
     html += '</div>';
 
+    html += '</div>';
+    container.innerHTML = html;
+  },
+
+  // ---- Trump Phase (2-player) ----
+  renderTrumpPhase(container) {
+    const round = GameState.state.currentRound;
+    let html = '<div class="fade-in">';
+    html += `<h2 class="mb-12">Round ${round.roundNumber} - Trump</h2>`;
+    html += '<h3 class="mb-8">Which suit was turned up?</h3>';
+    html += '<div class="trump-grid">';
+    SUITS.forEach(suit => {
+      const active = round.trump === suit.name ? 'active' : '';
+      const colorClass = suit.color === 'red' ? 'suit-red' : 'suit-black';
+      html += `<button class="trump-btn ${colorClass} ${active}" data-trump="${suit.name}">${suit.symbol}</button>`;
+    });
+    html += '</div>';
     html += '</div>';
     container.innerHTML = html;
   },
@@ -205,7 +227,7 @@ const UI = {
     html += '<div class="trick-input-list">';
     GameState.state.players.forEach(p => {
       const score = round.scores.find(s => s.playerId === p.id);
-      const isBidder = round.bidder === p.id;
+      const isBidder = !isTwoPlayerMode() && round.bidder === p.id;
       html += `<div class="trick-input-row" style="border-left: 4px solid ${p.color}">
                 <span class="trick-player-name">${p.name}${isBidder ? ' *' : ''}</span>
                 <input type="number" inputmode="numeric" data-trick-player="${p.id}"
@@ -255,7 +277,7 @@ const UI = {
     html += '<div class="round-summary">';
     GameState.state.players.forEach(p => {
       const score = round.scores.find(s => s.playerId === p.id);
-      const isBidder = round.bidder === p.id;
+      const isBidder = !isTwoPlayerMode() && round.bidder === p.id;
       let cardClass = '';
       let badge = '';
 
@@ -318,10 +340,14 @@ const UI = {
 
     let html = '';
     GameState.state.rounds.slice().reverse().forEach(round => {
+      const isTwoPlayer = GameState.state.config.playerCount === 2;
+      const roundInfo = isTwoPlayer
+        ? `Trump: ${round.trump || '?'}`
+        : `Bid: ${GameState.getPlayerName(round.bidder)} - ${round.bid} (${round.trump || '?'})`;
       html += `<div class="history-round">
                 <div class="history-round-header">
                   <span>Round ${round.roundNumber}</span>
-                  <span>Bid: ${GameState.getPlayerName(round.bidder)} - ${round.bid} (${round.trump || '?'})</span>
+                  <span>${roundInfo}</span>
                 </div>
                 <div class="history-scores">`;
       round.scores.forEach(s => {
@@ -390,7 +416,8 @@ const UI = {
 
     bar.classList.remove('hidden');
     const phase = GameState.state.currentRound.phase;
-    const phaseIdx = PHASES.indexOf(phase);
+    const phases = getPhases();
+    const phaseIdx = phases.indexOf(phase);
 
     if (phase === 'score') {
       nextBtn.textContent = 'Finish Round';

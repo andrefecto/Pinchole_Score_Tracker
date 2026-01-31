@@ -160,7 +160,7 @@ const GameState = {
     const roundNumber = this.state.rounds.length + 1;
     this.state.currentRound = {
       roundNumber,
-      phase: 'bid',
+      phase: isTwoPlayerMode() ? 'trump' : 'bid',
       bidder: null,
       bid: 0,
       trump: null,
@@ -291,8 +291,11 @@ const GameState = {
 
       const roundTotal = score.meld + trickTotal;
 
-      // Check if this player is the bidder
-      if (score.playerId === round.bidder) {
+      if (isTwoPlayerMode()) {
+        // 2-player: no bidder, no set logic -- simple total
+        score.total = roundTotal;
+      } else if (score.playerId === round.bidder) {
+        // Check if this player is the bidder
         if (this.state.config.gameType === 'partnership') {
           // In partnership, team total must meet bid
           const team = this.state.players[score.playerId].team;
