@@ -55,6 +55,14 @@ const App = {
     // Theme toggle
     document.getElementById('btn-theme').addEventListener('click', () => this.toggleTheme());
 
+    // Reset / New Game (header)
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      if (confirm('Start a new game? Current progress will be lost.')) {
+        GameState.clear();
+        this.showSetup();
+      }
+    });
+
     // Help modal
     document.getElementById('btn-help').addEventListener('click', () => {
       document.getElementById('modal-help').classList.add('active');
