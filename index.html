@@ -42,8 +42,9 @@
       <div class="setup-section" id="deck-type-section">
         <h2>Deck Type</h2>
         <div class="toggle-group">
-          <button class="toggle-btn active" data-deck="single">Single Deck</button>
-          <button class="toggle-btn" data-deck="double">Double Deck</button>
+          <button class="toggle-btn active" data-deck="single">Single (48)</button>
+          <button class="toggle-btn" data-deck="64">64-Card</button>
+          <button class="toggle-btn" data-deck="double">Double (80)</button>
         </div>
       </div>
 
@@ -174,18 +175,38 @@
         <h3 class="mt-16">Bidding</h3>
         <p>Players bid on how many points they think they can earn. The highest bidder names trump and must meet their bid through meld + trick points.</p>
 
-        <h3 class="mt-16">Meld (Single Deck)</h3>
+        <h3 class="mt-16">Deck Types</h3>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;"><strong>Single (48)</strong>: A-10-K-Q-J-9 &times; 4 suits &times; 2 copies<br>
+        <strong>64-Card</strong>: A-10-K-Q-J-9-8-7 &times; 4 suits &times; 2 copies<br>
+        <strong>Double (80)</strong>: A-10-K-Q-J &times; 4 suits &times; 4 copies (no 9s)</p>
+
+        <h3 class="mt-16">Meld (Single &amp; 64-Card Deck)</h3>
         <table style="width:100%; margin-top:8px; font-size:0.875rem;">
-          <tr><td>Marriage</td><td style="text-align:right">20</td></tr>
-          <tr><td>Royal Marriage (trump)</td><td style="text-align:right">40</td></tr>
-          <tr><td>Run (A-10-K-Q-J trump)</td><td style="text-align:right">150</td></tr>
+          <tr><td>Marriage (K+Q same suit)</td><td style="text-align:right">20</td></tr>
+          <tr><td>Royal Marriage (K+Q of trump)</td><td style="text-align:right">40</td></tr>
+          <tr><td>Run (A-10-K-Q-J of trump)</td><td style="text-align:right">150</td></tr>
           <tr><td>Pinochle (J&#9830; + Q&#9824;)</td><td style="text-align:right">40</td></tr>
           <tr><td>Dix (9 of trump)</td><td style="text-align:right">10</td></tr>
-          <tr><td>Aces Around</td><td style="text-align:right">100</td></tr>
-          <tr><td>Kings Around</td><td style="text-align:right">80</td></tr>
-          <tr><td>Queens Around</td><td style="text-align:right">60</td></tr>
-          <tr><td>Jacks Around</td><td style="text-align:right">40</td></tr>
-          <tr><td>Roundhouse</td><td style="text-align:right">240</td></tr>
+          <tr><td>Aces Around (A in each suit)</td><td style="text-align:right">100</td></tr>
+          <tr><td>Kings Around (K in each suit)</td><td style="text-align:right">80</td></tr>
+          <tr><td>Queens Around (Q in each suit)</td><td style="text-align:right">60</td></tr>
+          <tr><td>Jacks Around (J in each suit)</td><td style="text-align:right">40</td></tr>
+          <tr><td>Roundhouse (K+Q in all 4 suits)</td><td style="text-align:right">240</td></tr>
+        </table>
+
+        <h3 class="mt-16">Additional Melds (Double Deck)</h3>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Double deck = two Pinochle decks, no 9s (80 cards, 4 of each card). Dix is not available.</p>
+        <table style="width:100%; margin-top:8px; font-size:0.875rem;">
+          <tr><td>Double Pinochle (both J&#9830; + both Q&#9824;)</td><td style="text-align:right">300</td></tr>
+          <tr><td>Triple Pinochle (3x J&#9830; + 3x Q&#9824;)</td><td style="text-align:right">600</td></tr>
+          <tr><td>Quadruple Pinochle (4x J&#9830; + 4x Q&#9824;)</td><td style="text-align:right">1200</td></tr>
+          <tr><td>Double Marriage (2x K+Q same suit)</td><td style="text-align:right">40</td></tr>
+          <tr><td>Double Royal Marriage (2x K+Q of trump)</td><td style="text-align:right">80</td></tr>
+          <tr><td>Double Run (2x A-10-K-Q-J of trump)</td><td style="text-align:right">1500</td></tr>
+          <tr><td>Aces Abound (2x A in each suit)</td><td style="text-align:right">1000</td></tr>
+          <tr><td>Kings Abound (2x K in each suit)</td><td style="text-align:right">800</td></tr>
+          <tr><td>Queens Abound (2x Q in each suit)</td><td style="text-align:right">600</td></tr>
+          <tr><td>Jacks Abound (2x J in each suit)</td><td style="text-align:right">400</td></tr>
         </table>
 
         <h3 class="mt-16">Going Set</h3>

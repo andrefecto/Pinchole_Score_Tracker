@@ -437,6 +437,8 @@ const GameState = {
     }
 
     if (deckType === 'double') {
+      // Double deck has no 9s, so Dix is never available
+      melds = melds.filter(m => m.id !== 'dix');
       const doubleMelds = DOUBLE_DECK_MELDS[rules] || DOUBLE_DECK_MELDS.standard;
       melds = melds.concat(doubleMelds);
     }

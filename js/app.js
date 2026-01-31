@@ -225,14 +225,14 @@ const App = {
 
   autoSuggestDeck(count) {
     const deckBtns = document.querySelectorAll('[data-deck]');
+    const setDeck = (type) => {
+      deckBtns.forEach(b => b.classList.toggle('active', b.dataset.deck === type));
+      GameState.updateConfig('deckType', type);
+    };
     if (count <= 3) {
-      deckBtns[0].classList.add('active');
-      deckBtns[1].classList.remove('active');
-      GameState.updateConfig('deckType', 'single');
+      setDeck('single');
     } else if (count >= 5) {
-      deckBtns[0].classList.remove('active');
-      deckBtns[1].classList.add('active');
-      GameState.updateConfig('deckType', 'double');
+      setDeck('double');
     }
     // For 4, leave as user's choice
   },
