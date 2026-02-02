@@ -820,6 +820,59 @@ input:focus, select:focus {
   margin-bottom: 6px;
 }
 
+/* Per-player meld layout */
+.meld-players-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.meld-player-card {
+  background: var(--bg-surface);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.meld-player-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.meld-player-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.meld-player-card-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.meld-player-card-total {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.meld-grid-compact {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.meld-hint {
+  background: var(--bg-surface);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 .meld-class-hint {
   background: var(--bg-surface);
   border-left: 4px solid var(--accent);
@@ -1264,8 +1317,12 @@ input:focus, select:focus {
 
 /* ========== Responsive ========== */
 @media (min-width: 480px) {
-  .meld-grid {
+  .meld-grid:not(.meld-grid-compact) {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .meld-grid-compact {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .bidder-select-grid {
@@ -1278,8 +1335,16 @@ input:focus, select:focus {
 }
 
 @media (min-width: 768px) {
-  .meld-grid {
+  .meld-grid:not(.meld-grid-compact) {
     grid-template-columns: repeat(4, 1fr);
+  }
+
+  .meld-grid-compact {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .meld-players-grid.players-2 {
+    grid-template-columns: 1fr 1fr;
   }
 
   .bidder-select-grid {
@@ -1300,6 +1365,10 @@ input:focus, select:focus {
 }
 
 @media (min-width: 1024px) {
+  .meld-players-grid.players-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
   .container {
     padding: 0 24px;
   }

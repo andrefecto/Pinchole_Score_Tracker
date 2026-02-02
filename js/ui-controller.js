@@ -170,126 +170,97 @@ const UI = {
 
   // ---- Meld Phase ----
   renderMeldPhase(container) {
-    if (isSideBySideMeld()) {
-      this.renderMeldPhaseSideBySide(container);
-    } else {
-      this.renderMeldPhaseTabbed(container);
-    }
+    this.renderMeldPhasePerPlayer(container);
   },
 
-  renderMeldPhaseTabbed(container) {
+  renderMeldPhasePerPlayer(container) {
     const round = GameState.state.currentRound;
     const melds = GameState.getAvailableMelds();
-    const playerId = this.selectedMeldPlayer;
-    const playerScore = round.scores.find(s => s.playerId === playerId);
+    const partnership = isPartnershipMode();
+    const twoPlayer = isTwoPlayerMode();
+    const playerCount = GameState.state.players.length;
 
     let html = '<div class="fade-in">';
     html += this.renderTrumpIndicator();
 
-    if (isPartnershipMode()) {
-      // Team tabs
-      html += '<div class="meld-player-tabs">';
+    // Hint message
+    if (twoPlayer) {
+      html += `<div class="meld-hint">
+                In 2-player Pinochle, each player melds one combination per trick won.
+                Cards on the table can be reused in melds of a different class or for a higher meld within the same class.
+              </div>`;
+    } else {
+      html += `<div class="meld-hint">
+                All players declare melds from their hand before trick play begins.
+              </div>`;
+    }
+
+    // Responsive grid container
+    const countClass = partnership
+      ? `players-${GameState.state.config.partnerships.length}`
+      : `players-${playerCount}`;
+    html += `<div class="meld-players-grid ${countClass}">`;
+
+    if (partnership) {
+      // One card per team
       GameState.state.config.partnerships.forEach(team => {
         const primaryId = GameState.getTeamPrimaryPlayer(team.team);
-        const selectedTeam = GameState.getTeamForPlayer(playerId);
-        const active = selectedTeam && selectedTeam.team === team.team ? 'active' : '';
-        const meldTotal = GameState.getTeamMeldTotal(team.team);
-        html += `<button class="meld-player-tab ${active}" data-meld-team="${team.team}">
-                  ${team.name} (${meldTotal})
-                </button>`;
+        const teamMeldTotal = GameState.getTeamMeldTotal(team.team);
+        const selectedTeam = GameState.getTeamForPlayer(this.selectedMeldPlayer);
+        const isActive = selectedTeam && selectedTeam.team === team.team ? 'active' : '';
+
+        html += `<div class="meld-player-card ${isActive}">`;
+        html += `<div class="meld-player-card-header" data-meld-team="${team.team}">
+                  <span class="meld-player-card-name">${team.name}</span>
+                  <span class="meld-player-card-total">${teamMeldTotal}</span>
+                </div>`;
+
+        // Meld buttons targeting primary player
+        html += this.renderPlayerMeldButtons(primaryId, melds);
+
+        // Combined team meld items
+        html += this.renderTeamMeldItemsList(team.team, melds);
+
+        // Manual meld entry
+        html += '<div class="meld-manual mt-12">';
+        html += `<input type="number" class="manual-meld-input" data-manual-meld-player="${primaryId}"
+                        inputmode="numeric" placeholder="Manual pts" min="0">`;
+        html += `<button class="btn btn-primary btn-sm" data-add-manual-meld-player="${primaryId}">Add</button>`;
+        html += '</div>';
+
+        html += '</div>';
       });
-      html += '</div>';
-
-      // Team meld total
-      const currentTeam = GameState.getTeamForPlayer(playerId);
-      const teamMeldTotal = currentTeam ? GameState.getTeamMeldTotal(currentTeam.team) : 0;
-      const teamName = currentTeam ? currentTeam.name : '';
-      html += `<div class="meld-total">
-                <span>${teamName} Meld: </span>
-                <span class="total-value">${teamMeldTotal}</span>
-              </div>`;
-
-      // Meld buttons grid
-      html += this.renderMeldButtons(melds);
-
-      // Combined team meld items
-      if (currentTeam) {
-        html += this.renderTeamMeldItemsList(currentTeam.team, melds);
-      }
     } else {
-      // Player tabs
-      html += '<div class="meld-player-tabs">';
+      // One card per player
       GameState.state.players.forEach(p => {
-        const active = playerId === p.id ? 'active' : '';
-        const meldTotal = round.scores.find(s => s.playerId === p.id)?.meld || 0;
-        html += `<button class="meld-player-tab ${active}" data-meld-player="${p.id}"
-                         style="border-bottom: 3px solid ${p.color}">
-                  ${p.name} (${meldTotal})
-                </button>`;
+        const score = round.scores.find(s => s.playerId === p.id);
+        const isActive = this.selectedMeldPlayer === p.id ? 'active' : '';
+
+        html += `<div class="meld-player-card ${isActive}" style="border-top: 3px solid ${p.color}">`;
+        html += `<div class="meld-player-card-header" data-meld-player="${p.id}">
+                  <span class="meld-player-card-name">${p.name}</span>
+                  <span class="meld-player-card-total">${score?.meld || 0}</span>
+                </div>`;
+
+        // Meld buttons for this player
+        html += this.renderPlayerMeldButtons(p.id, melds);
+
+        // Added melds list
+        html += this.renderMeldItemsList(score, melds);
+
+        // Manual meld entry
+        html += '<div class="meld-manual mt-12">';
+        html += `<input type="number" class="manual-meld-input" data-manual-meld-player="${p.id}"
+                        inputmode="numeric" placeholder="Manual pts" min="0">`;
+        html += `<button class="btn btn-primary btn-sm" data-add-manual-meld-player="${p.id}">Add</button>`;
+        html += '</div>';
+
+        html += '</div>';
       });
-      html += '</div>';
-
-      // Meld total for selected player
-      html += `<div class="meld-total">
-                <span>${GameState.getPlayerName(playerId)}'s Meld: </span>
-                <span class="total-value">${playerScore?.meld || 0}</span>
-              </div>`;
-
-      // Meld buttons grid
-      html += this.renderMeldButtons(melds);
-
-      // Added melds list
-      html += this.renderMeldItemsList(playerScore, melds);
     }
 
-    // Manual meld entry
-    html += '<div class="meld-manual mt-12">';
-    html += '<input type="number" id="manual-meld" inputmode="numeric" placeholder="Manual points" min="0">';
-    html += '<button class="btn btn-primary" id="btn-add-manual-meld">Add</button>';
-    html += '</div>';
-
-    html += '</div>';
-    container.innerHTML = html;
-  },
-
-  renderMeldPhaseSideBySide(container) {
-    const round = GameState.state.currentRound;
-    const melds = GameState.getAvailableMelds();
-    const playerId = this.selectedMeldPlayer;
-
-    let html = '<div class="fade-in">';
-    html += this.renderTrumpIndicator();
-
-    // Two-column layout
-    html += '<div class="meld-side-by-side">';
-    GameState.state.players.forEach(p => {
-      const isActive = playerId === p.id ? 'active' : '';
-      const score = round.scores.find(s => s.playerId === p.id);
-      html += `<div class="meld-column ${isActive}" data-meld-player="${p.id}"
-                    style="border-top: 3px solid ${p.color}">`;
-      html += `<div class="meld-column-header">
-                <span class="meld-column-name">${p.name}</span>
-                <span class="meld-column-total">${score?.meld || 0}</span>
-              </div>`;
-
-      // Added melds list
-      html += this.renderMeldItemsList(score, melds);
-
-      // Manual meld entry
-      html += '<div class="meld-manual mt-12">';
-      html += `<input type="number" class="manual-meld-input" data-manual-meld-player="${p.id}"
-                      inputmode="numeric" placeholder="Manual pts" min="0">`;
-      html += `<button class="btn btn-primary btn-sm" data-add-manual-meld-player="${p.id}">Add</button>`;
-      html += '</div>';
-
-      html += '</div>';
-    });
-    html += '</div>';
-
-    // Shared meld buttons below
-    html += this.renderMeldButtons(melds);
-
-    html += '</div>';
+    html += '</div>'; // close meld-players-grid
+    html += '</div>'; // close fade-in
     container.innerHTML = html;
   },
 
@@ -333,17 +304,17 @@ const UI = {
   },
 
   // ---- Meld Button Rendering ----
-  renderMeldButtons(melds) {
+  renderPlayerMeldButtons(playerId, melds) {
     if (isTwoPlayerMode()) {
-      return this.renderMeldButtonsGrouped(melds);
+      return this.renderPlayerMeldButtonsGrouped(playerId, melds);
     }
-    return this.renderMeldButtonsFlat(melds);
+    return this.renderPlayerMeldButtonsFlat(playerId, melds);
   },
 
-  renderMeldButtonsFlat(melds) {
-    let html = '<div class="meld-grid">';
+  renderPlayerMeldButtonsFlat(playerId, melds) {
+    let html = '<div class="meld-grid meld-grid-compact">';
     melds.forEach(meld => {
-      html += `<button class="meld-btn" data-meld-id="${meld.id}" data-meld-value="${meld.value}">
+      html += `<button class="meld-btn" data-meld-id="${meld.id}" data-meld-value="${meld.value}" data-meld-player="${playerId}">
                 <span>${meld.name}</span>
                 <span class="meld-value">+${meld.value}</span>
               </button>`;
@@ -352,12 +323,8 @@ const UI = {
     return html;
   },
 
-  renderMeldButtonsGrouped(melds) {
+  renderPlayerMeldButtonsGrouped(playerId, melds) {
     let html = '';
-    html += `<div class="meld-class-hint">
-              <strong>Meld Classes:</strong> In 2-player Pinochle, each player may only meld from
-              one class (A, B, or C) per round, plus Roundhouse.
-            </div>`;
 
     const classes = ['A', 'B', 'C'];
     classes.forEach(cls => {
@@ -367,9 +334,9 @@ const UI = {
 
       html += '<div class="meld-class-group">';
       html += `<div class="meld-class-label">${classInfo.label} — ${classInfo.description}</div>`;
-      html += '<div class="meld-grid">';
+      html += '<div class="meld-grid meld-grid-compact">';
       classMelds.forEach(meld => {
-        html += `<button class="meld-btn" data-meld-id="${meld.id}" data-meld-value="${meld.value}">
+        html += `<button class="meld-btn" data-meld-id="${meld.id}" data-meld-value="${meld.value}" data-meld-player="${playerId}">
                   <span>${meld.name}</span>
                   <span class="meld-value">+${meld.value}</span>
                 </button>`;
@@ -382,9 +349,9 @@ const UI = {
     const ungrouped = melds.filter(m => m.meldClass === null || m.meldClass === undefined);
     if (ungrouped.length > 0) {
       html += '<div class="meld-class-group">';
-      html += '<div class="meld-grid">';
+      html += '<div class="meld-grid meld-grid-compact">';
       ungrouped.forEach(meld => {
-        html += `<button class="meld-btn" data-meld-id="${meld.id}" data-meld-value="${meld.value}">
+        html += `<button class="meld-btn" data-meld-id="${meld.id}" data-meld-value="${meld.value}" data-meld-player="${playerId}">
                   <span>${meld.name}</span>
                   <span class="meld-value">+${meld.value}</span>
                 </button>`;

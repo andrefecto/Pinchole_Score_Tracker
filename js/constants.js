@@ -139,10 +139,6 @@ function isTwoPlayerMode() {
   return GameState.state?.config?.playerCount === 2;
 }
 
-function isSideBySideMeld() {
-  return isTwoPlayerMode() && window.innerWidth >= 768;
-}
-
 function isPartnershipMode() {
   return GameState.state?.config?.gameType === 'partnership';
 }

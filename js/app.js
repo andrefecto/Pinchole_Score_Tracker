@@ -363,24 +363,6 @@ const App = {
     const phaseContent = document.getElementById('phase-content');
     const scoreboard = document.getElementById('scoreboard-inner');
 
-    // Resize listener for side-by-side meld re-render
-    if (!this._resizeHandler) {
-      let lastWasSideBySide = isSideBySideMeld();
-      this._resizeHandler = () => {
-        clearTimeout(this._resizeTimeout);
-        this._resizeTimeout = setTimeout(() => {
-          const nowSideBySide = isSideBySideMeld();
-          if (nowSideBySide !== lastWasSideBySide &&
-              GameState.state.currentRound?.phase === 'meld') {
-            lastWasSideBySide = nowSideBySide;
-            UI.renderGame();
-          }
-          lastWasSideBySide = nowSideBySide;
-        }, 150);
-      };
-      window.addEventListener('resize', this._resizeHandler);
-    }
-
     // Delegate all phase content events
     phaseContent.removeEventListener('click', this._phaseClickHandler);
     this._phaseClickHandler = (e) => this.handlePhaseClick(e);
@@ -438,11 +420,21 @@ const App = {
     const round = GameState.state.currentRound;
     if (!round) return;
 
-    // Side-by-side column click (works on non-button elements)
-    const meldColumn = e.target.closest('.meld-column[data-meld-player]');
-    if (meldColumn && !e.target.closest('button') && !e.target.closest('input')) {
-      UI.selectedMeldPlayer = parseInt(meldColumn.dataset.meldPlayer);
+    // Player card header click (updates scoreboard highlight)
+    const cardHeader = e.target.closest('.meld-player-card-header[data-meld-player]');
+    if (cardHeader) {
+      UI.selectedMeldPlayer = parseInt(cardHeader.dataset.meldPlayer);
       UI.renderGame();
+      return;
+    }
+    const teamCardHeader = e.target.closest('.meld-player-card-header[data-meld-team]');
+    if (teamCardHeader) {
+      const teamIndex = parseInt(teamCardHeader.dataset.meldTeam);
+      const primaryId = GameState.getTeamPrimaryPlayer(teamIndex);
+      if (primaryId !== null) {
+        UI.selectedMeldPlayer = primaryId;
+        UI.renderGame();
+      }
       return;
     }
 
@@ -477,14 +469,14 @@ const App = {
       UI.renderGame();
     }
 
-    // Meld player tab
-    if (target.dataset.meldPlayer !== undefined) {
+    // Meld player tab (only for tab buttons, not meld buttons which also have data-meld-player)
+    if (target.dataset.meldPlayer !== undefined && target.dataset.meldId === undefined) {
       UI.selectedMeldPlayer = parseInt(target.dataset.meldPlayer);
       UI.renderGame();
     }
 
     // Meld team tab (partnership mode)
-    if (target.dataset.meldTeam !== undefined) {
+    if (target.dataset.meldTeam !== undefined && target.dataset.meldId === undefined) {
       const teamIndex = parseInt(target.dataset.meldTeam);
       const primaryId = GameState.getTeamPrimaryPlayer(teamIndex);
       if (primaryId !== null) {
@@ -495,8 +487,11 @@ const App = {
 
     // Add meld
     if (target.dataset.meldId !== undefined) {
+      const pid = target.dataset.meldPlayer !== undefined
+        ? parseInt(target.dataset.meldPlayer)
+        : UI.selectedMeldPlayer;
       GameState.addMeld(
-        UI.selectedMeldPlayer,
+        pid,
         target.dataset.meldId,
         parseInt(target.dataset.meldValue)
       );
@@ -512,17 +507,7 @@ const App = {
       UI.renderGame();
     }
 
-    // Add manual meld (tabbed mode)
-    if (target.id === 'btn-add-manual-meld') {
-      const input = document.getElementById('manual-meld');
-      const val = parseInt(input.value);
-      if (val > 0) {
-        GameState.addManualMeld(UI.selectedMeldPlayer, val);
-        UI.renderGame();
-      }
-    }
-
-    // Add manual meld (side-by-side mode)
+    // Add manual meld (per-player)
     if (target.dataset.addManualMeldPlayer !== undefined) {
       const playerId = parseInt(target.dataset.addManualMeldPlayer);
       const input = document.querySelector(`.manual-meld-input[data-manual-meld-player="${playerId}"]`);
