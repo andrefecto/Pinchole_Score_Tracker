@@ -1210,6 +1210,16 @@ input:focus, select:focus {
   font-size: 0.875rem;
 }
 
+/* ========== Cloud Save ========== */
+.cloud-user-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; font-size:0.875rem; color:var(--text-secondary); }
+.cloud-save-item { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-color); }
+.cloud-save-item:last-child { border-bottom:none; }
+.cloud-save-info { display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
+.cloud-save-name { font-weight:600; font-size:0.875rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cloud-save-date { font-size:0.75rem; color:var(--text-muted); }
+.cloud-save-actions { display:flex; gap:6px; flex-shrink:0; }
+.cloud-status { text-align:center; font-size:0.875rem; color:var(--success); min-height:24px; padding:4px 0; }
+
 /* ========== Utility ========== */
 .hidden { display: none !important; }
 

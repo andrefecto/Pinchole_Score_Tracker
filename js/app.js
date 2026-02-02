@@ -11,6 +11,8 @@ const App = {
     }
 
     this.bindGlobalEvents();
+
+    if (typeof CloudSave !== 'undefined') CloudSave.init();
   },
 
   // ---- Theme ----
