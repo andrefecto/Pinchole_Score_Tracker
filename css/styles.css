@@ -630,6 +630,34 @@ input:focus, select:focus {
 .trump-btn.suit-red { color: var(--suit-red); }
 .trump-btn.suit-black { color: var(--suit-black); }
 
+/* ========== Trump Indicator ========== */
+.trump-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-color);
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 12px;
+}
+
+.trump-indicator-symbol {
+  font-size: 1.25rem;
+}
+
+.trump-indicator-red {
+  color: var(--suit-red);
+  border-color: var(--suit-red);
+}
+
+.trump-indicator-black {
+  color: var(--suit-black);
+  border-color: var(--suit-black);
+}
+
 /* ========== Meld Phase ========== */
 .meld-player-tabs {
   display: flex;
@@ -740,6 +768,69 @@ input:focus, select:focus {
   color: var(--accent);
 }
 
+.meld-side-by-side {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.meld-column {
+  background: var(--bg-surface);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.meld-column.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.meld-column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.meld-column-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.meld-column-total {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.meld-class-group {
+  margin-bottom: 16px;
+}
+
+.meld-class-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.meld-class-hint {
+  background: var(--bg-surface);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 .meld-manual {
   display: flex;
   gap: 8px;
@@ -774,6 +865,7 @@ input:focus, select:focus {
 
 .trick-counter-btns {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 
@@ -786,6 +878,84 @@ input:focus, select:focus {
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
+}
+
+.trick-counter-btn.trick-minus {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.trick-counter-btn.trick-plus {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.card-count-section {
+  padding: 8px 0 0 0;
+  margin-bottom: 4px;
+}
+
+.card-count-grid {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.card-count-row {
+  display: grid;
+  grid-template-columns: 50px 50px 40px 36px 40px 50px;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-count-row:last-child {
+  border-bottom: none;
+}
+
+.card-count-rank {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.card-count-value {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.card-count-btn {
+  min-height: 36px;
+  min-width: 36px;
+  padding: 4px;
+  font-size: 1rem;
+  font-weight: 700;
+  background: var(--bg-surface-alt);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+}
+
+.card-count-num {
+  text-align: center;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.card-count-subtotal {
+  text-align: right;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.card-count-total {
+  margin-top: 8px;
+  text-align: right;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
 }
 
 .last-trick-section {
@@ -962,6 +1132,23 @@ input:focus, select:focus {
 }
 
 .modal h2 { margin-bottom: 16px; }
+
+.help-section-header {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  background: var(--bg-surface-alt);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.help-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 16px 0;
+}
 
 .modal-close {
   float: right;

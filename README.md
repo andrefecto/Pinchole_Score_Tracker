@@ -1,5 +1,7 @@
 # Pinochle Score Tracker
 
+**[Play Now](https://andrefecto.github.io/Pinchole_Score_Tracker/)**
+
 A mobile-first, responsive scoring app for the card game Pinochle. Supports 2-8 players with quick-add meld buttons, game phase tracking, configurable house rules, and dark mode.
 
 Built as a static site -- no server required. Works offline once loaded.

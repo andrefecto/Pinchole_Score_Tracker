@@ -14,8 +14,10 @@ const UI = {
         const total = GameState.getTeamTotal(team.team);
         const names = team.players.map(id => GameState.getPlayerName(id));
         const abbr = names.map(n => n.substring(0, 3)).join('/');
+        const selectedTeam = GameState.getTeamForPlayer(this.selectedMeldPlayer);
+        const active = selectedTeam && selectedTeam.team === team.team ? 'active' : '';
         html += `
-          <div class="score-chip" data-team="${team.team}">
+          <div class="score-chip ${active}" data-team="${team.team}">
             <span class="team-label">${team.name}</span>
             <span class="player-name">${abbr}</span>
             <span class="player-score">${total}</span>
@@ -153,56 +155,91 @@ const UI = {
     container.innerHTML = html;
   },
 
+  // ---- Trump Indicator ----
+  renderTrumpIndicator() {
+    const round = GameState.state.currentRound;
+    if (!round || !round.trump) return '';
+    const suit = SUITS.find(s => s.name === round.trump);
+    if (!suit) return '';
+    const colorClass = suit.color === 'red' ? 'trump-indicator-red' : 'trump-indicator-black';
+    return `<div class="trump-indicator ${colorClass}">
+              <span class="trump-indicator-symbol">${suit.symbol}</span>
+              <span>${suit.name}</span>
+            </div>`;
+  },
+
   // ---- Meld Phase ----
   renderMeldPhase(container) {
+    if (isSideBySideMeld()) {
+      this.renderMeldPhaseSideBySide(container);
+    } else {
+      this.renderMeldPhaseTabbed(container);
+    }
+  },
+
+  renderMeldPhaseTabbed(container) {
     const round = GameState.state.currentRound;
     const melds = GameState.getAvailableMelds();
     const playerId = this.selectedMeldPlayer;
     const playerScore = round.scores.find(s => s.playerId === playerId);
 
     let html = '<div class="fade-in">';
+    html += this.renderTrumpIndicator();
 
-    // Player tabs
-    html += '<div class="meld-player-tabs">';
-    GameState.state.players.forEach(p => {
-      const active = playerId === p.id ? 'active' : '';
-      const meldTotal = round.scores.find(s => s.playerId === p.id)?.meld || 0;
-      html += `<button class="meld-player-tab ${active}" data-meld-player="${p.id}"
-                       style="border-bottom: 3px solid ${p.color}">
-                ${p.name} (${meldTotal})
-              </button>`;
-    });
-    html += '</div>';
-
-    // Meld total for selected player
-    html += `<div class="meld-total">
-              <span>${GameState.getPlayerName(playerId)}'s Meld: </span>
-              <span class="total-value">${playerScore?.meld || 0}</span>
-            </div>`;
-
-    // Meld buttons grid
-    html += '<div class="meld-grid">';
-    melds.forEach(meld => {
-      html += `<button class="meld-btn" data-meld-id="${meld.id}" data-meld-value="${meld.value}">
-                <span>${meld.name}</span>
-                <span class="meld-value">+${meld.value}</span>
-              </button>`;
-    });
-    html += '</div>';
-
-    // Added melds list
-    if (playerScore && playerScore.meldItems.length > 0) {
-      html += '<div class="meld-items-list">';
-      html += '<h3 class="mb-8">Added Melds</h3>';
-      playerScore.meldItems.forEach(item => {
-        const meldDef = melds.find(m => m.id === item.type);
-        const displayName = item.type === 'manual' ? 'Manual' : (meldDef ? meldDef.name : item.type);
-        html += `<div class="meld-item">
-                  <span>${displayName} (+${item.value})</span>
-                  <button class="meld-item-remove" data-remove-meld="${item.id}">&times;</button>
-                </div>`;
+    if (isPartnershipMode()) {
+      // Team tabs
+      html += '<div class="meld-player-tabs">';
+      GameState.state.config.partnerships.forEach(team => {
+        const primaryId = GameState.getTeamPrimaryPlayer(team.team);
+        const selectedTeam = GameState.getTeamForPlayer(playerId);
+        const active = selectedTeam && selectedTeam.team === team.team ? 'active' : '';
+        const meldTotal = GameState.getTeamMeldTotal(team.team);
+        html += `<button class="meld-player-tab ${active}" data-meld-team="${team.team}">
+                  ${team.name} (${meldTotal})
+                </button>`;
       });
       html += '</div>';
+
+      // Team meld total
+      const currentTeam = GameState.getTeamForPlayer(playerId);
+      const teamMeldTotal = currentTeam ? GameState.getTeamMeldTotal(currentTeam.team) : 0;
+      const teamName = currentTeam ? currentTeam.name : '';
+      html += `<div class="meld-total">
+                <span>${teamName} Meld: </span>
+                <span class="total-value">${teamMeldTotal}</span>
+              </div>`;
+
+      // Meld buttons grid
+      html += this.renderMeldButtons(melds);
+
+      // Combined team meld items
+      if (currentTeam) {
+        html += this.renderTeamMeldItemsList(currentTeam.team, melds);
+      }
+    } else {
+      // Player tabs
+      html += '<div class="meld-player-tabs">';
+      GameState.state.players.forEach(p => {
+        const active = playerId === p.id ? 'active' : '';
+        const meldTotal = round.scores.find(s => s.playerId === p.id)?.meld || 0;
+        html += `<button class="meld-player-tab ${active}" data-meld-player="${p.id}"
+                         style="border-bottom: 3px solid ${p.color}">
+                  ${p.name} (${meldTotal})
+                </button>`;
+      });
+      html += '</div>';
+
+      // Meld total for selected player
+      html += `<div class="meld-total">
+                <span>${GameState.getPlayerName(playerId)}'s Meld: </span>
+                <span class="total-value">${playerScore?.meld || 0}</span>
+              </div>`;
+
+      // Meld buttons grid
+      html += this.renderMeldButtons(melds);
+
+      // Added melds list
+      html += this.renderMeldItemsList(playerScore, melds);
     }
 
     // Manual meld entry
@@ -215,30 +252,235 @@ const UI = {
     container.innerHTML = html;
   },
 
+  renderMeldPhaseSideBySide(container) {
+    const round = GameState.state.currentRound;
+    const melds = GameState.getAvailableMelds();
+    const playerId = this.selectedMeldPlayer;
+
+    let html = '<div class="fade-in">';
+    html += this.renderTrumpIndicator();
+
+    // Two-column layout
+    html += '<div class="meld-side-by-side">';
+    GameState.state.players.forEach(p => {
+      const isActive = playerId === p.id ? 'active' : '';
+      const score = round.scores.find(s => s.playerId === p.id);
+      html += `<div class="meld-column ${isActive}" data-meld-player="${p.id}"
+                    style="border-top: 3px solid ${p.color}">`;
+      html += `<div class="meld-column-header">
+                <span class="meld-column-name">${p.name}</span>
+                <span class="meld-column-total">${score?.meld || 0}</span>
+              </div>`;
+
+      // Added melds list
+      html += this.renderMeldItemsList(score, melds);
+
+      // Manual meld entry
+      html += '<div class="meld-manual mt-12">';
+      html += `<input type="number" class="manual-meld-input" data-manual-meld-player="${p.id}"
+                      inputmode="numeric" placeholder="Manual pts" min="0">`;
+      html += `<button class="btn btn-primary btn-sm" data-add-manual-meld-player="${p.id}">Add</button>`;
+      html += '</div>';
+
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Shared meld buttons below
+    html += this.renderMeldButtons(melds);
+
+    html += '</div>';
+    container.innerHTML = html;
+  },
+
+  renderMeldItemsList(playerScore, melds) {
+    let html = '';
+    if (playerScore && playerScore.meldItems.length > 0) {
+      html += '<div class="meld-items-list">';
+      html += '<h3 class="mb-8">Added Melds</h3>';
+      playerScore.meldItems.forEach(item => {
+        const meldDef = melds.find(m => m.id === item.type);
+        const displayName = item.type === 'manual' ? 'Manual' : (meldDef ? meldDef.name : item.type);
+        html += `<div class="meld-item">
+                  <span>${displayName} (+${item.value})</span>
+                  <button class="meld-item-remove" data-remove-meld="${item.id}"
+                          data-remove-meld-player="${playerScore.playerId}">&times;</button>
+                </div>`;
+      });
+      html += '</div>';
+    }
+    return html;
+  },
+
+  renderTeamMeldItemsList(teamIndex, melds) {
+    const items = GameState.getTeamMeldItems(teamIndex);
+    if (items.length === 0) return '';
+
+    let html = '<div class="meld-items-list">';
+    html += '<h3 class="mb-8">Added Melds</h3>';
+    items.forEach(item => {
+      const meldDef = melds.find(m => m.id === item.type);
+      const displayName = item.type === 'manual' ? 'Manual' : (meldDef ? meldDef.name : item.type);
+      const playerName = GameState.getPlayerName(item.playerId);
+      html += `<div class="meld-item">
+                <span>${displayName} (+${item.value}) <small style="color:var(--text-muted)">${playerName}</small></span>
+                <button class="meld-item-remove" data-remove-meld="${item.id}"
+                        data-remove-meld-player="${item.playerId}">&times;</button>
+              </div>`;
+    });
+    html += '</div>';
+    return html;
+  },
+
+  // ---- Meld Button Rendering ----
+  renderMeldButtons(melds) {
+    if (isTwoPlayerMode()) {
+      return this.renderMeldButtonsGrouped(melds);
+    }
+    return this.renderMeldButtonsFlat(melds);
+  },
+
+  renderMeldButtonsFlat(melds) {
+    let html = '<div class="meld-grid">';
+    melds.forEach(meld => {
+      html += `<button class="meld-btn" data-meld-id="${meld.id}" data-meld-value="${meld.value}">
+                <span>${meld.name}</span>
+                <span class="meld-value">+${meld.value}</span>
+              </button>`;
+    });
+    html += '</div>';
+    return html;
+  },
+
+  renderMeldButtonsGrouped(melds) {
+    let html = '';
+    html += `<div class="meld-class-hint">
+              <strong>Meld Classes:</strong> In 2-player Pinochle, each player may only meld from
+              one class (A, B, or C) per round, plus Roundhouse.
+            </div>`;
+
+    const classes = ['A', 'B', 'C'];
+    classes.forEach(cls => {
+      const classInfo = MELD_CLASS_INFO[cls];
+      const classMelds = melds.filter(m => m.meldClass === cls);
+      if (classMelds.length === 0) return;
+
+      html += '<div class="meld-class-group">';
+      html += `<div class="meld-class-label">${classInfo.label} — ${classInfo.description}</div>`;
+      html += '<div class="meld-grid">';
+      classMelds.forEach(meld => {
+        html += `<button class="meld-btn" data-meld-id="${meld.id}" data-meld-value="${meld.value}">
+                  <span>${meld.name}</span>
+                  <span class="meld-value">+${meld.value}</span>
+                </button>`;
+      });
+      html += '</div>';
+      html += '</div>';
+    });
+
+    // Ungrouped melds (e.g. roundhouse with meldClass: null)
+    const ungrouped = melds.filter(m => m.meldClass === null || m.meldClass === undefined);
+    if (ungrouped.length > 0) {
+      html += '<div class="meld-class-group">';
+      html += '<div class="meld-grid">';
+      ungrouped.forEach(meld => {
+        html += `<button class="meld-btn" data-meld-id="${meld.id}" data-meld-value="${meld.value}">
+                  <span>${meld.name}</span>
+                  <span class="meld-value">+${meld.value}</span>
+                </button>`;
+      });
+      html += '</div>';
+      html += '</div>';
+    }
+
+    return html;
+  },
+
   // ---- Play Phase ----
   renderPlayPhase(container) {
     const round = GameState.state.currentRound;
     const bonus = GameState.getLastTrickBonus();
+    const twoPlayer = isTwoPlayerMode();
+    const partnership = isPartnershipMode();
 
     let html = '<div class="fade-in">';
     html += `<h2 class="mb-12">Round ${round.roundNumber} - Trick Points</h2>`;
+    html += this.renderTrumpIndicator();
 
     // Trick point inputs
     html += '<div class="trick-input-list">';
-    GameState.state.players.forEach(p => {
-      const score = round.scores.find(s => s.playerId === p.id);
-      const isBidder = !isTwoPlayerMode() && round.bidder === p.id;
-      html += `<div class="trick-input-row" style="border-left: 4px solid ${p.color}">
-                <span class="trick-player-name">${p.name}${isBidder ? ' *' : ''}</span>
-                <input type="number" inputmode="numeric" data-trick-player="${p.id}"
-                       value="${score?.trickPoints || 0}" min="0" step="1">
-                <div class="trick-counter-btns">
-                  <button class="trick-counter-btn" data-trick-add="${p.id}" data-amount="1">+1</button>
-                  <button class="trick-counter-btn" data-trick-add="${p.id}" data-amount="5">+5</button>
-                  <button class="trick-counter-btn" data-trick-add="${p.id}" data-amount="10">+10</button>
-                </div>
-              </div>`;
-    });
+
+    if (partnership) {
+      // Partnership: show 2 team rows, each using primary player's ID
+      GameState.state.config.partnerships.forEach(team => {
+        const primaryId = GameState.getTeamPrimaryPlayer(team.team);
+        const score = round.scores.find(s => s.playerId === primaryId);
+        const isBidderTeam = team.players.includes(round.bidder);
+        const cardCountActive = score?.cardCounts !== null && score?.cardCounts !== undefined;
+
+        html += `<div class="trick-input-row">
+                  <span class="trick-player-name">${team.name}${isBidderTeam ? ' *' : ''}</span>
+                  <input type="number" inputmode="numeric" data-trick-player="${primaryId}"
+                         value="${score?.trickPoints || 0}" min="0" step="1"
+                         ${cardCountActive ? 'readonly' : ''}>
+                  <div class="trick-counter-btns">
+                    <button class="trick-counter-btn trick-minus" data-trick-add="${primaryId}" data-amount="-10" ${cardCountActive ? 'disabled' : ''}>-10</button>
+                    <button class="trick-counter-btn trick-minus" data-trick-add="${primaryId}" data-amount="-5" ${cardCountActive ? 'disabled' : ''}>-5</button>
+                    <button class="trick-counter-btn trick-minus" data-trick-add="${primaryId}" data-amount="-1" ${cardCountActive ? 'disabled' : ''}>-1</button>
+                    <button class="trick-counter-btn trick-plus" data-trick-add="${primaryId}" data-amount="1" ${cardCountActive ? 'disabled' : ''}>+1</button>
+                    <button class="trick-counter-btn trick-plus" data-trick-add="${primaryId}" data-amount="5" ${cardCountActive ? 'disabled' : ''}>+5</button>
+                    <button class="trick-counter-btn trick-plus" data-trick-add="${primaryId}" data-amount="10" ${cardCountActive ? 'disabled' : ''}>+10</button>
+                  </div>
+                </div>`;
+      });
+    } else {
+      GameState.state.players.forEach(p => {
+        const score = round.scores.find(s => s.playerId === p.id);
+        const isBidder = !twoPlayer && round.bidder === p.id;
+        const cardCountActive = score?.cardCounts !== null && score?.cardCounts !== undefined;
+
+        html += `<div class="trick-input-row" style="border-left: 4px solid ${p.color}">
+                  <span class="trick-player-name">${p.name}${isBidder ? ' *' : ''}</span>
+                  <input type="number" inputmode="numeric" data-trick-player="${p.id}"
+                         value="${score?.trickPoints || 0}" min="0" step="1"
+                         ${cardCountActive ? 'readonly' : ''}>
+                  <div class="trick-counter-btns">
+                    <button class="trick-counter-btn trick-minus" data-trick-add="${p.id}" data-amount="-10" ${cardCountActive ? 'disabled' : ''}>-10</button>
+                    <button class="trick-counter-btn trick-minus" data-trick-add="${p.id}" data-amount="-5" ${cardCountActive ? 'disabled' : ''}>-5</button>
+                    <button class="trick-counter-btn trick-minus" data-trick-add="${p.id}" data-amount="-1" ${cardCountActive ? 'disabled' : ''}>-1</button>
+                    <button class="trick-counter-btn trick-plus" data-trick-add="${p.id}" data-amount="1" ${cardCountActive ? 'disabled' : ''}>+1</button>
+                    <button class="trick-counter-btn trick-plus" data-trick-add="${p.id}" data-amount="5" ${cardCountActive ? 'disabled' : ''}>+5</button>
+                    <button class="trick-counter-btn trick-plus" data-trick-add="${p.id}" data-amount="10" ${cardCountActive ? 'disabled' : ''}>+10</button>
+                  </div>
+                </div>`;
+
+        // Card count section (2-player only)
+        if (twoPlayer) {
+          html += `<div class="card-count-section">`;
+          if (!cardCountActive) {
+            html += `<button class="btn btn-secondary btn-sm" data-toggle-cards="${p.id}">Count Cards</button>`;
+          } else {
+            html += `<button class="btn btn-secondary btn-sm" data-toggle-cards="${p.id}">Switch to Manual</button>`;
+            html += '<div class="card-count-grid">';
+            CARD_POINT_VALUES.forEach(card => {
+              const count = score.cardCounts[card.rank] || 0;
+              const subtotal = count * card.value;
+              html += `<div class="card-count-row">
+                        <span class="card-count-rank">${card.label}</span>
+                        <span class="card-count-value">${card.value} pts</span>
+                        <button class="card-count-btn" data-card-delta="${p.id}" data-rank="${card.rank}" data-delta="-1">-</button>
+                        <span class="card-count-num">${count}</span>
+                        <button class="card-count-btn" data-card-delta="${p.id}" data-rank="${card.rank}" data-delta="1">+</button>
+                        <span class="card-count-subtotal">${subtotal}</span>
+                      </div>`;
+            });
+            html += '</div>';
+            html += `<div class="card-count-total">Total: ${score.trickPoints}</div>`;
+          }
+          html += '</div>';
+        }
+      });
+    }
     html += '</div>';
 
     // Last trick
@@ -246,11 +488,20 @@ const UI = {
       html += '<div class="last-trick-section">';
       html += `<h3>Last Trick (+${bonus})</h3>`;
       html += '<div class="last-trick-grid">';
-      GameState.state.players.forEach(p => {
-        const score = round.scores.find(s => s.playerId === p.id);
-        const active = score?.lastTrick ? 'active' : '';
-        html += `<button class="last-trick-btn ${active}" data-last-trick="${p.id}">${p.name}</button>`;
-      });
+      if (partnership) {
+        GameState.state.config.partnerships.forEach(team => {
+          const primaryId = GameState.getTeamPrimaryPlayer(team.team);
+          const score = round.scores.find(s => s.playerId === primaryId);
+          const active = score?.lastTrick ? 'active' : '';
+          html += `<button class="last-trick-btn ${active}" data-last-trick="${primaryId}">${team.name}</button>`;
+        });
+      } else {
+        GameState.state.players.forEach(p => {
+          const score = round.scores.find(s => s.playerId === p.id);
+          const active = score?.lastTrick ? 'active' : '';
+          html += `<button class="last-trick-btn ${active}" data-last-trick="${p.id}">${p.name}</button>`;
+        });
+      }
       html += '</div>';
       html += '</div>';
     }
@@ -269,59 +520,115 @@ const UI = {
 
     let html = '<div class="fade-in">';
 
-    // Check for winner
-    // (We'll check after finalize, but show preview)
     html += `<h2 class="mb-12">Round ${round.roundNumber} - Summary</h2>`;
+    html += this.renderTrumpIndicator();
 
     // Score cards
     html += '<div class="round-summary">';
-    GameState.state.players.forEach(p => {
-      const score = round.scores.find(s => s.playerId === p.id);
-      const isBidder = !isTwoPlayerMode() && round.bidder === p.id;
-      let cardClass = '';
-      let badge = '';
 
-      if (isBidder) {
-        if (score.madeBid === false) {
-          cardClass = 'set';
-          badge = '<span class="score-card-badge badge-set">SET</span>';
-        } else if (score.madeBid === true) {
-          cardClass = 'made-bid';
-          badge = '<span class="score-card-badge badge-made">Made</span>';
+    if (isPartnershipMode()) {
+      GameState.state.config.partnerships.forEach(team => {
+        const teamMeld = GameState.getTeamMeldTotal(team.team);
+        const teamTricks = GameState.getTeamTrickPoints(team.team);
+        const teamRoundTotal = team.players.reduce((sum, pid) => {
+          const s = round.scores.find(sc => sc.playerId === pid);
+          return sum + (s ? s.total : 0);
+        }, 0);
+        const isBidderTeam = team.players.includes(round.bidder);
+        const bidderScore = round.scores.find(s => s.playerId === round.bidder);
+        const bidderName = GameState.getPlayerName(round.bidder);
+
+        let cardClass = '';
+        let badge = '';
+        if (isBidderTeam && bidderScore) {
+          if (bidderScore.madeBid === false) {
+            cardClass = 'set';
+            badge = '<span class="score-card-badge badge-set">SET</span>';
+          } else if (bidderScore.madeBid === true) {
+            cardClass = 'made-bid';
+            badge = '<span class="score-card-badge badge-made">Made</span>';
+          }
+          cardClass += ' bidder';
         }
-        cardClass += ' bidder';
-      }
 
-      let trickTotal = score.trickPoints;
-      if (score.lastTrick) trickTotal += bonus;
+        const runningTotal = GameState.getTeamTotal(team.team) + teamRoundTotal;
 
-      html += `<div class="score-card ${cardClass}" style="border-left-color: ${isBidder ? '' : p.color}">
-                <div class="score-card-header">
-                  <span class="score-card-name">${p.name}</span>
-                  <div>
-                    ${isBidder ? '<span class="score-card-badge badge-bidder">Bidder (' + round.bid + ')</span> ' : ''}
-                    ${badge}
+        html += `<div class="score-card ${cardClass}">
+                  <div class="score-card-header">
+                    <span class="score-card-name">${team.name}</span>
+                    <div>
+                      ${isBidderTeam ? '<span class="score-card-badge badge-bidder">' + bidderName + ' (' + round.bid + ')</span> ' : ''}
+                      ${badge}
+                    </div>
                   </div>
-                </div>
-                <div class="score-breakdown">
-                  <div class="score-breakdown-item">
-                    <div class="score-breakdown-label">Meld</div>
-                    <div class="score-breakdown-value">${score.meld}</div>
+                  <div class="score-breakdown">
+                    <div class="score-breakdown-item">
+                      <div class="score-breakdown-label">Meld</div>
+                      <div class="score-breakdown-value">${teamMeld}</div>
+                    </div>
+                    <div class="score-breakdown-item">
+                      <div class="score-breakdown-label">Tricks</div>
+                      <div class="score-breakdown-value">${teamTricks}</div>
+                    </div>
+                    <div class="score-breakdown-item">
+                      <div class="score-breakdown-label">Round</div>
+                      <div class="score-breakdown-value ${teamRoundTotal < 0 ? 'negative' : ''}">${teamRoundTotal}</div>
+                    </div>
                   </div>
-                  <div class="score-breakdown-item">
-                    <div class="score-breakdown-label">Tricks</div>
-                    <div class="score-breakdown-value">${trickTotal}</div>
+                  <div class="round-total">
+                    Running: ${runningTotal}
                   </div>
-                  <div class="score-breakdown-item">
-                    <div class="score-breakdown-label">Round</div>
-                    <div class="score-breakdown-value ${score.total < 0 ? 'negative' : ''}">${score.total}</div>
+                </div>`;
+      });
+    } else {
+      GameState.state.players.forEach(p => {
+        const score = round.scores.find(s => s.playerId === p.id);
+        const isBidder = !isTwoPlayerMode() && round.bidder === p.id;
+        let cardClass = '';
+        let badge = '';
+
+        if (isBidder) {
+          if (score.madeBid === false) {
+            cardClass = 'set';
+            badge = '<span class="score-card-badge badge-set">SET</span>';
+          } else if (score.madeBid === true) {
+            cardClass = 'made-bid';
+            badge = '<span class="score-card-badge badge-made">Made</span>';
+          }
+          cardClass += ' bidder';
+        }
+
+        let trickTotal = score.trickPoints;
+        if (score.lastTrick) trickTotal += bonus;
+
+        html += `<div class="score-card ${cardClass}" style="border-left-color: ${isBidder ? '' : p.color}">
+                  <div class="score-card-header">
+                    <span class="score-card-name">${p.name}</span>
+                    <div>
+                      ${isBidder ? '<span class="score-card-badge badge-bidder">Bidder (' + round.bid + ')</span> ' : ''}
+                      ${badge}
+                    </div>
                   </div>
-                </div>
-                <div class="round-total">
-                  Running: ${(GameState.state.totals.find(t => t.playerId === p.id)?.total || 0) + score.total}
-                </div>
-              </div>`;
-    });
+                  <div class="score-breakdown">
+                    <div class="score-breakdown-item">
+                      <div class="score-breakdown-label">Meld</div>
+                      <div class="score-breakdown-value">${score.meld}</div>
+                    </div>
+                    <div class="score-breakdown-item">
+                      <div class="score-breakdown-label">Tricks</div>
+                      <div class="score-breakdown-value">${trickTotal}</div>
+                    </div>
+                    <div class="score-breakdown-item">
+                      <div class="score-breakdown-label">Round</div>
+                      <div class="score-breakdown-value ${score.total < 0 ? 'negative' : ''}">${score.total}</div>
+                    </div>
+                  </div>
+                  <div class="round-total">
+                    Running: ${(GameState.state.totals.find(t => t.playerId === p.id)?.total || 0) + score.total}
+                  </div>
+                </div>`;
+      });
+    }
     html += '</div>';
 
     html += '</div>';
@@ -339,6 +646,8 @@ const UI = {
     }
 
     let html = '';
+    const partnership = isPartnershipMode();
+
     GameState.state.rounds.slice().reverse().forEach(round => {
       const isTwoPlayer = GameState.state.config.playerCount === 2;
       const roundInfo = isTwoPlayer
@@ -350,11 +659,25 @@ const UI = {
                   <span>${roundInfo}</span>
                 </div>
                 <div class="history-scores">`;
-      round.scores.forEach(s => {
-        const name = GameState.getPlayerName(s.playerId);
-        const set = s.madeBid === false ? ' SET' : '';
-        html += `<span class="history-score-item">${name}: ${s.total > 0 ? '+' : ''}${s.total}${set}</span>`;
-      });
+
+      if (partnership) {
+        GameState.state.config.partnerships.forEach(team => {
+          const teamTotal = team.players.reduce((sum, pid) => {
+            const s = round.scores.find(sc => sc.playerId === pid);
+            return sum + (s ? s.total : 0);
+          }, 0);
+          const bidderScore = round.scores.find(s => s.playerId === round.bidder);
+          const isBidderTeam = team.players.includes(round.bidder);
+          const set = isBidderTeam && bidderScore && bidderScore.madeBid === false ? ' SET' : '';
+          html += `<span class="history-score-item">${team.name}: ${teamTotal > 0 ? '+' : ''}${teamTotal}${set}</span>`;
+        });
+      } else {
+        round.scores.forEach(s => {
+          const name = GameState.getPlayerName(s.playerId);
+          const set = s.madeBid === false ? ' SET' : '';
+          html += `<span class="history-score-item">${name}: ${s.total > 0 ? '+' : ''}${s.total}${set}</span>`;
+        });
+      }
       html += '</div></div>';
     });
 

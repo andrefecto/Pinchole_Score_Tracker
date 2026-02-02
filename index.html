@@ -75,7 +75,7 @@
           <button class="toggle-btn" data-rules="custom">Custom</button>
         </div>
 
-        <div class="custom-rules-panel hidden" id="custom-rules-panel">
+        <div class="custom-rules-panel" id="custom-rules-panel">
           <div class="custom-rule-row">
             <span>Dix Scoring</span>
             <label class="switch">
@@ -169,18 +169,31 @@
       <button class="btn-icon modal-close" id="btn-close-help">&times;</button>
       <h2>Pinochle Quick Reference</h2>
       <div id="help-content">
-        <h3 class="mt-16">Game Flow</h3>
-        <p>Each round has 4 phases: <strong>Bid</strong>, <strong>Meld</strong>, <strong>Tricks</strong>, and <strong>Score</strong>.</p>
+        <div class="help-section-header">How to Play (2 Players)</div>
+        <p><strong>No bidding</strong> &mdash; a trump suit is turned up from the deck each round.</p>
+        <p>Each player melds from their hand, but may only choose <strong>one meld class</strong> per round:</p>
+        <ul style="margin:6px 0 6px 20px; font-size:0.875rem;">
+          <li><strong>Class A</strong> &mdash; Marriages, Runs &amp; Dix</li>
+          <li><strong>Class B</strong> &mdash; Aces/Kings/Queens/Jacks Around</li>
+          <li><strong>Class C</strong> &mdash; Pinochle</li>
+        </ul>
+        <p>Players take tricks and count card points. Both players score meld + tricks each round.</p>
 
-        <h3 class="mt-16">Bidding</h3>
-        <p>Players bid on how many points they think they can earn. The highest bidder names trump and must meet their bid through meld + trick points.</p>
+        <div class="help-divider"></div>
+
+        <div class="help-section-header">How to Play (3+ Players)</div>
+        <p><strong>Bidding:</strong> Players bid on points they can earn. The highest bidder names trump and must meet their bid through meld + trick points or go SET.</p>
+        <p><strong>Partnership:</strong> In 4+ player partnership games, teammates combine meld + tricks to meet the bid. All players may meld freely (no class restriction).</p>
+        <p>All players score meld + tricks. The bidder risks losing their bid amount if SET.</p>
+
+        <div class="help-divider"></div>
 
         <h3 class="mt-16">Deck Types</h3>
         <p style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;"><strong>Single (48)</strong>: A-10-K-Q-J-9 &times; 4 suits &times; 2 copies<br>
         <strong>64-Card</strong>: A-10-K-Q-J-9-8-7 &times; 4 suits &times; 2 copies<br>
         <strong>Double (80)</strong>: A-10-K-Q-J &times; 4 suits &times; 4 copies (no 9s)</p>
 
-        <h3 class="mt-16">Meld (Single &amp; 64-Card Deck)</h3>
+        <h3 class="mt-16">Meld Values (Single &amp; 64-Card Deck)</h3>
         <table style="width:100%; margin-top:8px; font-size:0.875rem;">
           <tr><td>Marriage (K+Q same suit)</td><td style="text-align:right">20</td></tr>
           <tr><td>Royal Marriage (K+Q of trump)</td><td style="text-align:right">40</td></tr>
@@ -209,8 +222,17 @@
           <tr><td>Jacks Abound (2x J in each suit)</td><td style="text-align:right">400</td></tr>
         </table>
 
+        <h3 class="mt-16">Card Point Values</h3>
+        <table style="width:100%; margin-top:8px; font-size:0.875rem;">
+          <tr><td>Ace</td><td style="text-align:right">11</td></tr>
+          <tr><td>Ten</td><td style="text-align:right">10</td></tr>
+          <tr><td>King</td><td style="text-align:right">4</td></tr>
+          <tr><td>Queen</td><td style="text-align:right">3</td></tr>
+          <tr><td>Jack</td><td style="text-align:right">2</td></tr>
+        </table>
+
         <h3 class="mt-16">Going Set</h3>
-        <p>If the bidder's meld + trick points don't meet their bid, they "go set" and lose points equal to their bid amount.</p>
+        <p>If the bidder's meld + trick points don't meet their bid, they "go set" and lose points equal to their bid amount. In partnership, the entire team loses.</p>
 
         <h3 class="mt-16">Winning</h3>
         <p>First player/team to reach the target score wins!</p>

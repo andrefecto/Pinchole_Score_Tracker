@@ -169,6 +169,7 @@ const GameState = {
         meld: 0,
         meldItems: [],
         trickPoints: 0,
+        cardCounts: null,
         total: 0,
         madeBid: null,
       })),
@@ -240,6 +241,7 @@ const GameState = {
     const score = this.state.currentRound.scores.find(s => s.playerId === playerId);
     if (score) {
       score.trickPoints = points;
+      score.cardCounts = null;
     }
     this.save();
   },
@@ -248,7 +250,52 @@ const GameState = {
     this.pushUndo();
     const score = this.state.currentRound.scores.find(s => s.playerId === playerId);
     if (score) {
-      score.trickPoints += amount;
+      score.trickPoints = Math.max(0, score.trickPoints + amount);
+      score.cardCounts = null;
+    }
+    this.save();
+  },
+
+  setCardCount(playerId, rank, count) {
+    this.pushUndo();
+    const score = this.state.currentRound.scores.find(s => s.playerId === playerId);
+    if (score && score.cardCounts) {
+      score.cardCounts[rank] = Math.max(0, count);
+      score.trickPoints = this.calculateTrickPointsFromCards(score.cardCounts);
+    }
+    this.save();
+  },
+
+  addCardCount(playerId, rank, delta) {
+    this.pushUndo();
+    const score = this.state.currentRound.scores.find(s => s.playerId === playerId);
+    if (score && score.cardCounts) {
+      score.cardCounts[rank] = Math.max(0, (score.cardCounts[rank] || 0) + delta);
+      score.trickPoints = this.calculateTrickPointsFromCards(score.cardCounts);
+    }
+    this.save();
+  },
+
+  calculateTrickPointsFromCards(cardCounts) {
+    if (!cardCounts) return 0;
+    return CARD_POINT_VALUES.reduce((sum, card) => {
+      return sum + (cardCounts[card.rank] || 0) * card.value;
+    }, 0);
+  },
+
+  toggleCardCounts(playerId) {
+    this.pushUndo();
+    const score = this.state.currentRound.scores.find(s => s.playerId === playerId);
+    if (score) {
+      if (score.cardCounts) {
+        // Switching to manual — keep current trickPoints, clear card counts
+        score.cardCounts = null;
+      } else {
+        // Switching to card counting — initialize counts, reset trick points
+        score.cardCounts = {};
+        CARD_POINT_VALUES.forEach(c => { score.cardCounts[c.rank] = 0; });
+        score.trickPoints = 0;
+      }
     }
     this.save();
   },
@@ -321,6 +368,20 @@ const GameState = {
         score.total = roundTotal;
       }
     });
+
+    // Partnership SET fix: when bidder is SET, zero out all teammates' totals
+    if (this.state.config.gameType === 'partnership' && !isTwoPlayerMode()) {
+      const bidderScore = round.scores.find(s => s.playerId === round.bidder);
+      if (bidderScore && bidderScore.madeBid === false) {
+        const bidderTeam = this.state.players[round.bidder].team;
+        round.scores.forEach(score => {
+          if (score.playerId !== round.bidder &&
+              this.state.players[score.playerId].team === bidderTeam) {
+            score.total = 0;
+          }
+        });
+      }
+    }
 
     this.save();
   },
@@ -482,6 +543,58 @@ const GameState = {
     return this.state.totals
       .filter(t => this.state.players[t.playerId].team === teamIndex)
       .reduce((sum, t) => sum + t.total, 0);
+  },
+
+  getTeamPrimaryPlayer(teamIndex) {
+    const partnership = this.state.config.partnerships[teamIndex];
+    return partnership ? partnership.players[0] : null;
+  },
+
+  getTeamForPlayer(playerId) {
+    return this.state.config.partnerships.find(p => p.players.includes(playerId));
+  },
+
+  getTeamMeldTotal(teamIndex) {
+    const round = this.state.currentRound;
+    if (!round) return 0;
+    const partnership = this.state.config.partnerships[teamIndex];
+    if (!partnership) return 0;
+    return partnership.players.reduce((sum, pid) => {
+      const score = round.scores.find(s => s.playerId === pid);
+      return sum + (score?.meld || 0);
+    }, 0);
+  },
+
+  getTeamMeldItems(teamIndex) {
+    const round = this.state.currentRound;
+    if (!round) return [];
+    const partnership = this.state.config.partnerships[teamIndex];
+    if (!partnership) return [];
+    const items = [];
+    partnership.players.forEach(pid => {
+      const score = round.scores.find(s => s.playerId === pid);
+      if (score) {
+        score.meldItems.forEach(item => {
+          items.push({ ...item, playerId: pid });
+        });
+      }
+    });
+    return items;
+  },
+
+  getTeamTrickPoints(teamIndex) {
+    const round = this.state.currentRound;
+    if (!round) return 0;
+    const partnership = this.state.config.partnerships[teamIndex];
+    if (!partnership) return 0;
+    const bonus = this.getLastTrickBonus();
+    return partnership.players.reduce((sum, pid) => {
+      const score = round.scores.find(s => s.playerId === pid);
+      if (!score) return sum;
+      let tp = score.trickPoints;
+      if (score.lastTrick) tp += bonus;
+      return sum + tp;
+    }, 0);
   },
 
   getScorableEntities() {

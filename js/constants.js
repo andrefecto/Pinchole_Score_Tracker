@@ -25,58 +25,72 @@ const SUITS = [
 // Single deck melds (standard values)
 const SINGLE_DECK_MELDS = {
   standard: [
-    { id: 'marriage', name: 'Marriage', value: 20, category: 'marriages' },
-    { id: 'royal-marriage', name: 'Royal Marriage', value: 40, category: 'marriages' },
-    { id: 'run', name: 'Run', value: 150, category: 'runs' },
-    { id: 'pinochle', name: 'Pinochle', value: 40, category: 'pinochle' },
-    { id: 'dix', name: 'Dix', value: 10, category: 'dix' },
-    { id: 'aces-around', name: 'Aces Around', value: 100, category: 'around' },
-    { id: 'kings-around', name: 'Kings Around', value: 80, category: 'around' },
-    { id: 'queens-around', name: 'Queens Around', value: 60, category: 'around' },
-    { id: 'jacks-around', name: 'Jacks Around', value: 40, category: 'around' },
-    { id: 'roundhouse', name: 'Roundhouse', value: 240, category: 'special' },
+    { id: 'marriage', name: 'Marriage', value: 20, category: 'marriages', meldClass: 'A' },
+    { id: 'royal-marriage', name: 'Royal Marriage', value: 40, category: 'marriages', meldClass: 'A' },
+    { id: 'run', name: 'Run', value: 150, category: 'runs', meldClass: 'A' },
+    { id: 'pinochle', name: 'Pinochle', value: 40, category: 'pinochle', meldClass: 'C' },
+    { id: 'dix', name: 'Dix', value: 10, category: 'dix', meldClass: 'A' },
+    { id: 'aces-around', name: 'Aces Around', value: 100, category: 'around', meldClass: 'B' },
+    { id: 'kings-around', name: 'Kings Around', value: 80, category: 'around', meldClass: 'B' },
+    { id: 'queens-around', name: 'Queens Around', value: 60, category: 'around', meldClass: 'B' },
+    { id: 'jacks-around', name: 'Jacks Around', value: 40, category: 'around', meldClass: 'B' },
+    { id: 'roundhouse', name: 'Roundhouse', value: 240, category: 'special', meldClass: null },
   ],
   npa: [
-    { id: 'marriage', name: 'Marriage', value: 20, category: 'marriages' },
-    { id: 'royal-marriage', name: 'Royal Marriage', value: 40, category: 'marriages' },
-    { id: 'run', name: 'Run', value: 250, category: 'runs' },
-    { id: 'pinochle', name: 'Pinochle', value: 150, category: 'pinochle' },
-    { id: 'dix', name: 'Dix', value: 10, category: 'dix' },
-    { id: 'aces-around', name: 'Aces Around', value: 100, category: 'around' },
-    { id: 'kings-around', name: 'Kings Around', value: 80, category: 'around' },
-    { id: 'queens-around', name: 'Queens Around', value: 60, category: 'around' },
-    { id: 'jacks-around', name: 'Jacks Around', value: 40, category: 'around' },
-    { id: 'roundhouse', name: 'Roundhouse', value: 240, category: 'special' },
+    { id: 'marriage', name: 'Marriage', value: 20, category: 'marriages', meldClass: 'A' },
+    { id: 'royal-marriage', name: 'Royal Marriage', value: 40, category: 'marriages', meldClass: 'A' },
+    { id: 'run', name: 'Run', value: 250, category: 'runs', meldClass: 'A' },
+    { id: 'pinochle', name: 'Pinochle', value: 150, category: 'pinochle', meldClass: 'C' },
+    { id: 'dix', name: 'Dix', value: 10, category: 'dix', meldClass: 'A' },
+    { id: 'aces-around', name: 'Aces Around', value: 100, category: 'around', meldClass: 'B' },
+    { id: 'kings-around', name: 'Kings Around', value: 80, category: 'around', meldClass: 'B' },
+    { id: 'queens-around', name: 'Queens Around', value: 60, category: 'around', meldClass: 'B' },
+    { id: 'jacks-around', name: 'Jacks Around', value: 40, category: 'around', meldClass: 'B' },
+    { id: 'roundhouse', name: 'Roundhouse', value: 240, category: 'special', meldClass: null },
   ],
 };
 
 // Double deck additional melds
 const DOUBLE_DECK_MELDS = {
   standard: [
-    { id: 'double-pinochle', name: 'Double Pinochle', value: 300, category: 'pinochle' },
-    { id: 'triple-pinochle', name: 'Triple Pinochle', value: 600, category: 'pinochle' },
-    { id: 'quad-pinochle', name: 'Quad Pinochle', value: 1200, category: 'pinochle' },
-    { id: 'double-marriage', name: 'Double Marriage', value: 40, category: 'marriages' },
-    { id: 'double-royal-marriage', name: 'Double Royal Marriage', value: 80, category: 'marriages' },
-    { id: 'double-run', name: 'Double Run', value: 1500, category: 'runs' },
-    { id: 'aces-abound', name: 'Aces Abound', value: 1000, category: 'around' },
-    { id: 'kings-abound', name: 'Kings Abound', value: 800, category: 'around' },
-    { id: 'queens-abound', name: 'Queens Abound', value: 600, category: 'around' },
-    { id: 'jacks-abound', name: 'Jacks Abound', value: 400, category: 'around' },
+    { id: 'double-pinochle', name: 'Double Pinochle', value: 300, category: 'pinochle', meldClass: 'C' },
+    { id: 'triple-pinochle', name: 'Triple Pinochle', value: 600, category: 'pinochle', meldClass: 'C' },
+    { id: 'quad-pinochle', name: 'Quad Pinochle', value: 1200, category: 'pinochle', meldClass: 'C' },
+    { id: 'double-marriage', name: 'Double Marriage', value: 40, category: 'marriages', meldClass: 'A' },
+    { id: 'double-royal-marriage', name: 'Double Royal Marriage', value: 80, category: 'marriages', meldClass: 'A' },
+    { id: 'double-run', name: 'Double Run', value: 1500, category: 'runs', meldClass: 'A' },
+    { id: 'aces-abound', name: 'Aces Abound', value: 1000, category: 'around', meldClass: 'B' },
+    { id: 'kings-abound', name: 'Kings Abound', value: 800, category: 'around', meldClass: 'B' },
+    { id: 'queens-abound', name: 'Queens Abound', value: 600, category: 'around', meldClass: 'B' },
+    { id: 'jacks-abound', name: 'Jacks Abound', value: 400, category: 'around', meldClass: 'B' },
   ],
   npa: [
-    { id: 'double-pinochle', name: 'Double Pinochle', value: 600, category: 'pinochle' },
-    { id: 'triple-pinochle', name: 'Triple Pinochle', value: 1200, category: 'pinochle' },
-    { id: 'quad-pinochle', name: 'Quad Pinochle', value: 2400, category: 'pinochle' },
-    { id: 'double-marriage', name: 'Double Marriage', value: 40, category: 'marriages' },
-    { id: 'double-royal-marriage', name: 'Double Royal Marriage', value: 80, category: 'marriages' },
-    { id: 'double-run', name: 'Double Run', value: 1500, category: 'runs' },
-    { id: 'aces-abound', name: 'Aces Abound', value: 1000, category: 'around' },
-    { id: 'kings-abound', name: 'Kings Abound', value: 800, category: 'around' },
-    { id: 'queens-abound', name: 'Queens Abound', value: 600, category: 'around' },
-    { id: 'jacks-abound', name: 'Jacks Abound', value: 400, category: 'around' },
+    { id: 'double-pinochle', name: 'Double Pinochle', value: 600, category: 'pinochle', meldClass: 'C' },
+    { id: 'triple-pinochle', name: 'Triple Pinochle', value: 1200, category: 'pinochle', meldClass: 'C' },
+    { id: 'quad-pinochle', name: 'Quad Pinochle', value: 2400, category: 'pinochle', meldClass: 'C' },
+    { id: 'double-marriage', name: 'Double Marriage', value: 40, category: 'marriages', meldClass: 'A' },
+    { id: 'double-royal-marriage', name: 'Double Royal Marriage', value: 80, category: 'marriages', meldClass: 'A' },
+    { id: 'double-run', name: 'Double Run', value: 1500, category: 'runs', meldClass: 'A' },
+    { id: 'aces-abound', name: 'Aces Abound', value: 1000, category: 'around', meldClass: 'B' },
+    { id: 'kings-abound', name: 'Kings Abound', value: 800, category: 'around', meldClass: 'B' },
+    { id: 'queens-abound', name: 'Queens Abound', value: 600, category: 'around', meldClass: 'B' },
+    { id: 'jacks-abound', name: 'Jacks Abound', value: 400, category: 'around', meldClass: 'B' },
   ],
 };
+
+const MELD_CLASS_INFO = {
+  A: { label: 'Class A', description: 'Marriages, Runs & Dix' },
+  B: { label: 'Class B', description: 'Around Melds' },
+  C: { label: 'Class C', description: 'Pinochle' },
+};
+
+const CARD_POINT_VALUES = [
+  { rank: 'A', label: 'Ace', value: 11 },
+  { rank: '10', label: 'Ten', value: 10 },
+  { rank: 'K', label: 'King', value: 4 },
+  { rank: 'Q', label: 'Queen', value: 3 },
+  { rank: 'J', label: 'Jack', value: 2 },
+];
 
 const QUICK_BIDS = [200, 250, 300, 350, 400];
 
@@ -123,6 +137,14 @@ const PHASE_LABELS = {
 
 function isTwoPlayerMode() {
   return GameState.state?.config?.playerCount === 2;
+}
+
+function isSideBySideMeld() {
+  return isTwoPlayerMode() && window.innerWidth >= 768;
+}
+
+function isPartnershipMode() {
+  return GameState.state?.config?.gameType === 'partnership';
 }
 
 function getPhases() {

@@ -188,26 +188,24 @@ const App = {
       if (!btn) return;
       this.setToggleActive(btn);
       GameState.updateConfig('houseRules', btn.dataset.rules);
-
-      const customPanel = document.getElementById('custom-rules-panel');
-      if (btn.dataset.rules === 'custom') {
-        customPanel.classList.remove('hidden');
-      } else {
-        customPanel.classList.add('hidden');
-      }
+      this.populateRuleControls(btn.dataset.rules);
     });
 
-    // Custom rule toggles
+    // Custom rule toggles — auto-switch to custom when changed
     document.getElementById('rule-dix')?.addEventListener('change', (e) => {
+      this.switchToCustomRules();
       GameState.updateCustomRule('dixScoring', e.target.checked);
     });
     document.getElementById('rule-roundhouse')?.addEventListener('change', (e) => {
+      this.switchToCustomRules();
       GameState.updateCustomRule('roundhouseAsMeld', e.target.checked);
     });
     document.getElementById('rule-set-penalty')?.addEventListener('change', (e) => {
+      this.switchToCustomRules();
       GameState.updateCustomRule('setPenalty', e.target.value);
     });
     document.getElementById('rule-last-trick')?.addEventListener('change', (e) => {
+      this.switchToCustomRules();
       GameState.updateCustomRule('lastTrickBonus', parseInt(e.target.value));
     });
 
@@ -221,6 +219,9 @@ const App = {
 
     // Initialize player name inputs
     UI.renderPlayerNameInputs(GameState.state.config.playerCount);
+
+    // Initialize rule controls to match current preset
+    this.populateRuleControls(GameState.state.config.houseRules);
   },
 
   autoSuggestDeck(count) {
@@ -252,6 +253,47 @@ const App = {
         GameState.updateConfig('gameType', 'individual');
         partSection.classList.add('hidden');
       }
+    }
+  },
+
+  populateRuleControls(presetKey) {
+    const rules = presetKey === 'custom'
+      ? GameState.state.config.customRules
+      : HOUSE_RULE_PRESETS[presetKey];
+    if (!rules) return;
+
+    const dixEl = document.getElementById('rule-dix');
+    const roundhouseEl = document.getElementById('rule-roundhouse');
+    const setPenaltyEl = document.getElementById('rule-set-penalty');
+    const lastTrickEl = document.getElementById('rule-last-trick');
+
+    if (dixEl) dixEl.checked = rules.dixScoring;
+    if (roundhouseEl) roundhouseEl.checked = rules.roundhouseAsMeld;
+    if (setPenaltyEl) setPenaltyEl.value = rules.setPenalty;
+    if (lastTrickEl) lastTrickEl.value = String(rules.lastTrickBonus);
+  },
+
+  switchToCustomRules() {
+    if (GameState.state.config.houseRules === 'custom') return;
+
+    // Copy current preset values into customRules
+    const current = HOUSE_RULE_PRESETS[GameState.state.config.houseRules];
+    if (current) {
+      GameState.state.config.customRules = {
+        dixScoring: current.dixScoring,
+        roundhouseAsMeld: current.roundhouseAsMeld,
+        setPenalty: current.setPenalty,
+        lastTrickBonus: current.lastTrickBonus,
+        meldOverrides: { ...current.meldOverrides },
+      };
+    }
+
+    GameState.updateConfig('houseRules', 'custom');
+
+    // Update toggle button UI
+    const customBtn = document.querySelector('[data-rules="custom"]');
+    if (customBtn) {
+      this.setToggleActive(customBtn);
     }
   },
 
@@ -313,6 +355,24 @@ const App = {
     const phaseContent = document.getElementById('phase-content');
     const scoreboard = document.getElementById('scoreboard-inner');
 
+    // Resize listener for side-by-side meld re-render
+    if (!this._resizeHandler) {
+      let lastWasSideBySide = isSideBySideMeld();
+      this._resizeHandler = () => {
+        clearTimeout(this._resizeTimeout);
+        this._resizeTimeout = setTimeout(() => {
+          const nowSideBySide = isSideBySideMeld();
+          if (nowSideBySide !== lastWasSideBySide &&
+              GameState.state.currentRound?.phase === 'meld') {
+            lastWasSideBySide = nowSideBySide;
+            UI.renderGame();
+          }
+          lastWasSideBySide = nowSideBySide;
+        }, 150);
+      };
+      window.addEventListener('resize', this._resizeHandler);
+    }
+
     // Delegate all phase content events
     phaseContent.removeEventListener('click', this._phaseClickHandler);
     this._phaseClickHandler = (e) => this.handlePhaseClick(e);
@@ -323,13 +383,26 @@ const App = {
     this._phaseChangeHandler = (e) => this.handlePhaseChange(e);
     phaseContent.addEventListener('change', this._phaseChangeHandler);
 
-    // Scoreboard click for player selection in meld phase
+    // Scoreboard click for player/team selection in meld phase
     scoreboard.removeEventListener('click', this._scoreboardClickHandler);
     this._scoreboardClickHandler = (e) => {
-      const chip = e.target.closest('[data-player]');
-      if (chip && GameState.state.currentRound?.phase === 'meld') {
-        UI.selectedMeldPlayer = parseInt(chip.dataset.player);
+      if (GameState.state.currentRound?.phase !== 'meld') return;
+
+      const playerChip = e.target.closest('[data-player]');
+      if (playerChip) {
+        UI.selectedMeldPlayer = parseInt(playerChip.dataset.player);
         UI.renderGame();
+        return;
+      }
+
+      const teamChip = e.target.closest('[data-team]');
+      if (teamChip) {
+        const teamIndex = parseInt(teamChip.dataset.team);
+        const primaryId = GameState.getTeamPrimaryPlayer(teamIndex);
+        if (primaryId !== null) {
+          UI.selectedMeldPlayer = primaryId;
+          UI.renderGame();
+        }
       }
     };
     scoreboard.addEventListener('click', this._scoreboardClickHandler);
@@ -354,11 +427,19 @@ const App = {
   },
 
   handlePhaseClick(e) {
-    const target = e.target.closest('button');
-    if (!target) return;
-
     const round = GameState.state.currentRound;
     if (!round) return;
+
+    // Side-by-side column click (works on non-button elements)
+    const meldColumn = e.target.closest('.meld-column[data-meld-player]');
+    if (meldColumn && !e.target.closest('button') && !e.target.closest('input')) {
+      UI.selectedMeldPlayer = parseInt(meldColumn.dataset.meldPlayer);
+      UI.renderGame();
+      return;
+    }
+
+    const target = e.target.closest('button');
+    if (!target) return;
 
     // Bidder selection
     if (target.dataset.bidder !== undefined) {
@@ -394,6 +475,16 @@ const App = {
       UI.renderGame();
     }
 
+    // Meld team tab (partnership mode)
+    if (target.dataset.meldTeam !== undefined) {
+      const teamIndex = parseInt(target.dataset.meldTeam);
+      const primaryId = GameState.getTeamPrimaryPlayer(teamIndex);
+      if (primaryId !== null) {
+        UI.selectedMeldPlayer = primaryId;
+        UI.renderGame();
+      }
+    }
+
     // Add meld
     if (target.dataset.meldId !== undefined) {
       GameState.addMeld(
@@ -406,11 +497,14 @@ const App = {
 
     // Remove meld
     if (target.dataset.removeMeld !== undefined) {
-      GameState.removeMeld(UI.selectedMeldPlayer, parseInt(target.dataset.removeMeld));
+      const removeMeldPlayer = target.dataset.removeMeldPlayer !== undefined
+        ? parseInt(target.dataset.removeMeldPlayer)
+        : UI.selectedMeldPlayer;
+      GameState.removeMeld(removeMeldPlayer, parseInt(target.dataset.removeMeld));
       UI.renderGame();
     }
 
-    // Add manual meld
+    // Add manual meld (tabbed mode)
     if (target.id === 'btn-add-manual-meld') {
       const input = document.getElementById('manual-meld');
       const val = parseInt(input.value);
@@ -420,11 +514,37 @@ const App = {
       }
     }
 
+    // Add manual meld (side-by-side mode)
+    if (target.dataset.addManualMeldPlayer !== undefined) {
+      const playerId = parseInt(target.dataset.addManualMeldPlayer);
+      const input = document.querySelector(`.manual-meld-input[data-manual-meld-player="${playerId}"]`);
+      const val = parseInt(input?.value);
+      if (val > 0) {
+        GameState.addManualMeld(playerId, val);
+        UI.renderGame();
+      }
+    }
+
     // Trick counter buttons
     if (target.dataset.trickAdd !== undefined) {
       const playerId = parseInt(target.dataset.trickAdd);
       const amount = parseInt(target.dataset.amount);
       GameState.addTrickPoints(playerId, amount);
+      UI.renderGame();
+    }
+
+    // Toggle card counting mode
+    if (target.dataset.toggleCards !== undefined) {
+      GameState.toggleCardCounts(parseInt(target.dataset.toggleCards));
+      UI.renderGame();
+    }
+
+    // Card count delta buttons
+    if (target.dataset.cardDelta !== undefined) {
+      const playerId = parseInt(target.dataset.cardDelta);
+      const rank = target.dataset.rank;
+      const delta = parseInt(target.dataset.delta);
+      GameState.addCardCount(playerId, rank, delta);
       UI.renderGame();
     }
 
