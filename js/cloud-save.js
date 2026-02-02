@@ -10,15 +10,16 @@ const CloudSave = {
   _statusTimeout: null,
 
   init() {
+    this._waitForGIS(0);
+  },
+
+  _waitForGIS(attempts) {
     if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
       this._setup();
-    } else {
-      // GIS script loads async — retry when it's ready
-      window.addEventListener('load', () => {
-        if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
-          this._setup();
-        }
-      });
+      return;
+    }
+    if (attempts < 50) {
+      setTimeout(() => this._waitForGIS(attempts + 1), 100);
     }
   },
 
