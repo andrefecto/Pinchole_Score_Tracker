@@ -13,6 +13,12 @@ const App = {
     this.bindGlobalEvents();
 
     if (typeof CloudSave !== 'undefined') CloudSave.init();
+
+    window.addEventListener('beforeunload', (e) => {
+      if (GameState.hasActiveGame()) {
+        e.preventDefault();
+      }
+    });
   },
 
   // ---- Theme ----
