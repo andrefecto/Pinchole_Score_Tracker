@@ -10,10 +10,19 @@ const CloudSave = {
   _statusTimeout: null,
 
   init() {
-    if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-      return;
+    if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+      this._setup();
+    } else {
+      // GIS script loads async — retry when it's ready
+      window.addEventListener('load', () => {
+        if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+          this._setup();
+        }
+      });
     }
+  },
 
+  _setup() {
     this.tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: this.CLIENT_ID,
       scope: this.SCOPES,
