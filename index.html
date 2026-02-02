@@ -17,6 +17,7 @@
       <button class="btn-icon" id="btn-reset" title="New Game" aria-label="New Game">&#8634;</button>
       <button class="btn-icon" id="btn-theme" title="Toggle dark mode" aria-label="Toggle dark mode">&#9790;</button>
       <button class="btn-icon" id="btn-help" title="Help" aria-label="Help">?</button>
+      <button class="btn-icon" id="btn-about" title="About" aria-label="About">&#9432;</button>
       <button class="btn-icon" id="btn-settings" title="Settings" aria-label="Settings">&#9881;</button>
     </div>
   </header>
@@ -271,6 +272,29 @@
         </div>
         <hr style="border-color: var(--border-color)">
         <button class="btn btn-danger" id="btn-new-game" style="width:100%">New Game</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== About Modal ====== -->
+  <div class="modal-overlay" id="modal-about">
+    <div class="modal">
+      <button class="btn-icon modal-close" id="btn-close-about">&times;</button>
+      <h2>About Pinochle Scorer</h2>
+      <p style="margin-bottom:12px; color:var(--text-secondary);">A free score tracker for Pinochle card games. Supports 2-8 players, single and double decks, partnerships, and customizable house rules.</p>
+      <p style="margin-bottom:16px; color:var(--text-secondary);">Built by <strong>Andre Fecto</strong>.</p>
+      <div class="flex flex-col gap-8">
+        <a href="https://github.com/andrefecto" target="_blank" rel="noopener noreferrer" class="btn btn-secondary about-link">
+          <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub
+        </a>
+        <a href="https://buymeacoffee.com/andrefecto" target="_blank" rel="noopener noreferrer" class="btn btn-secondary about-link">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.216 6.415l-.132-.666c-.119-.598-.388-1.163-1.001-1.379-.197-.069-.42-.098-.57-.241-.152-.143-.196-.366-.231-.572-.065-.378-.125-.756-.192-1.133-.057-.325-.102-.69-.25-.987-.195-.4-.597-.634-.996-.788a5.723 5.723 0 00-.626-.194c-1-.263-2.05-.36-3.077-.416a25.834 25.834 0 00-3.7.062c-.915.083-1.88.184-2.75.5-.318.116-.646.256-.888.501-.297.302-.393.77-.177 1.146.154.267.415.456.692.58.36.162.737.284 1.123.366 1.075.238 2.189.331 3.287.37 1.218.05 2.437.01 3.65-.118.299-.033.598-.073.896-.119.352-.054.578-.513.474-.834-.124-.383-.457-.531-.834-.473-.466.074-.96.108-1.382.146-1.177.08-2.358.082-3.536.006a22.228 22.228 0 01-1.157-.107c-.086-.01-.18-.025-.258-.036-.243-.036-.484-.08-.724-.13-.111-.027-.111-.185 0-.212h.005c.277-.06.557-.108.838-.147h.002c.131-.009.263-.032.394-.048a25.076 25.076 0 013.426-.12c.674.019 1.347.067 2.017.144l.228.031c.267.04.533.088.798.145.392.085.895.113 1.07.542.055.137.08.288.111.431l.319 1.484a.237.237 0 01-.199.284h-.003c-.037.006-.075.01-.112.015a36.704 36.704 0 01-4.743.295 37.059 37.059 0 01-4.699-.304c-.14-.017-.293-.042-.417-.06-.326-.048-.649-.108-.973-.161-.393-.065-.768-.032-1.123.161-.29.16-.502.451-.399.792.045.15.15.27.27.36l.344.282c.394.317.8.622 1.21.918 1.207.868 2.414 1.736 3.62 2.604.46.33.919.662 1.378.993.137.099.272.204.42.285.763.418 1.462.04 1.523-.755.06-.768-.393-1.402-.905-1.885-.512-.484-1.107-.89-1.695-1.273-.848-.553-1.696-1.107-2.544-1.66-.263-.172-.527-.343-.79-.515z"/><path d="M8.5 14a1 1 0 100 2 1 1 0 000-2zm7 0a1 1 0 100 2 1 1 0 000-2z"/><path d="M4 19h16v1a2 2 0 01-2 2H6a2 2 0 01-2-2v-1zm0-3h16v2H4v-2z"/></svg>
+          Buy Me a Coffee
+        </a>
+      </div>
+      <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border-color);">
+        <a href="privacy.html" style="font-size:0.8rem; color:var(--text-muted);">Privacy Policy</a>
       </div>
     </div>
   </div>

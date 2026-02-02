@@ -79,6 +79,14 @@ const App = {
       document.getElementById('modal-help').classList.remove('active');
     });
 
+    // About modal
+    document.getElementById('btn-about').addEventListener('click', () => {
+      document.getElementById('modal-about').classList.add('active');
+    });
+    document.getElementById('btn-close-about').addEventListener('click', () => {
+      document.getElementById('modal-about').classList.remove('active');
+    });
+
     // Settings modal
     document.getElementById('btn-settings').addEventListener('click', () => {
       document.getElementById('modal-settings').classList.add('active');
