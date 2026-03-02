@@ -1,16 +1,17 @@
 const CACHE_NAME = 'pinochle-scorer-v1';
+const BASE_PATH = '/Pinchole_Score_Tracker';
 const APP_ASSETS = [
-  '/',
-  '/index.html',
-  '/css/styles.css',
-  '/js/constants.js',
-  '/js/game-state.js',
-  '/js/ui-controller.js',
-  '/js/cloud-save.js',
-  '/js/app.js',
-  '/icons/icon-192.svg',
-  '/icons/icon-512.svg',
-  '/privacy.html',
+  BASE_PATH + '/',
+  BASE_PATH + '/index.html',
+  BASE_PATH + '/css/styles.css',
+  BASE_PATH + '/js/constants.js',
+  BASE_PATH + '/js/game-state.js',
+  BASE_PATH + '/js/ui-controller.js',
+  BASE_PATH + '/js/cloud-save.js',
+  BASE_PATH + '/js/app.js',
+  BASE_PATH + '/icons/icon-192.svg',
+  BASE_PATH + '/icons/icon-512.svg',
+  BASE_PATH + '/privacy.html',
 ];
 
 // Install: cache app assets
