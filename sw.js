@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pinochle-scorer-v1';
+const CACHE_NAME = 'pinochle-scorer-v2';
 const BASE_PATH = '/Pinchole_Score_Tracker';
 const APP_ASSETS = [
   BASE_PATH + '/',
@@ -9,8 +9,10 @@ const APP_ASSETS = [
   BASE_PATH + '/js/ui-controller.js',
   BASE_PATH + '/js/cloud-save.js',
   BASE_PATH + '/js/app.js',
-  BASE_PATH + '/icons/icon-192.svg',
-  BASE_PATH + '/icons/icon-512.svg',
+  BASE_PATH + '/icons/icon-192.png',
+  BASE_PATH + '/icons/icon-512.png',
+  BASE_PATH + '/icons/apple-touch-icon.png',
+  BASE_PATH + '/manifest.json',
   BASE_PATH + '/privacy.html',
 ];
 
