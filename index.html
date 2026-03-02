@@ -7,6 +7,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#2c3e50">
   <title>Pinochle Scorer</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.svg">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -14,6 +16,7 @@
   <header class="app-header">
     <h1>Pinochle</h1>
     <div class="header-actions">
+      <button class="btn-icon hidden" id="btn-history" title="History" aria-label="History">&#9776;</button>
       <button class="btn-icon" id="btn-reset" title="New Game" aria-label="New Game">&#8634;</button>
       <button class="btn-icon" id="btn-theme" title="Toggle dark mode" aria-label="Toggle dark mode">&#9790;</button>
       <button class="btn-icon" id="btn-help" title="Help" aria-label="Help">?</button>
@@ -271,6 +274,14 @@
           </div>
         </div>
         <hr style="border-color: var(--border-color)">
+        <div class="custom-rule-row">
+          <span>Default to card counting (2-player)</span>
+          <label class="switch">
+            <input type="checkbox" id="pref-card-counting">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <hr style="border-color: var(--border-color)">
         <button class="btn btn-danger" id="btn-new-game" style="width:100%">New Game</button>
       </div>
     </div>
@@ -294,8 +305,25 @@
         </a>
       </div>
       <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border-color);">
+        <h3 style="margin-bottom:8px; font-size:0.95rem;">Rules &amp; References</h3>
+        <div class="flex flex-col gap-8" style="margin-bottom:12px;">
+          <a href="https://www.pagat.com/marriage/pin2hand.html" target="_blank" rel="noopener noreferrer" style="font-size:0.85rem; color:var(--accent);">Pagat.com &mdash; 2-Hand Pinochle</a>
+          <a href="https://bicyclecards.com/how-to-play/pinochle" target="_blank" rel="noopener noreferrer" style="font-size:0.85rem; color:var(--accent);">Bicycle Cards &mdash; Pinochle Rules</a>
+          <a href="https://en.wikipedia.org/wiki/Pinochle" target="_blank" rel="noopener noreferrer" style="font-size:0.85rem; color:var(--accent);">Wikipedia &mdash; Pinochle</a>
+        </div>
+      </div>
+      <div style="padding-top:8px; border-top:1px solid var(--border-color);">
         <a href="privacy.html" style="font-size:0.8rem; color:var(--text-muted);">Privacy Policy</a>
       </div>
+    </div>
+  </div>
+
+  <!-- ====== History Modal ====== -->
+  <div class="modal-overlay" id="modal-history">
+    <div class="modal modal-lg">
+      <button class="btn-icon modal-close" id="btn-close-history">&times;</button>
+      <h2>Game History</h2>
+      <div id="detailed-history-content"></div>
     </div>
   </div>
 
@@ -309,5 +337,10 @@
   <script src="js/ui-controller.js"></script>
   <script src="js/cloud-save.js"></script>
   <script src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  </script>
 </body>
 </html>

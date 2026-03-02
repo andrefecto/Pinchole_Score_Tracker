@@ -92,6 +92,20 @@ const CARD_POINT_VALUES = [
   { rank: 'J', label: 'Jack', value: 2 },
 ];
 
+// Total trick points available per deck type (all cards played through tricks)
+const TOTAL_CARD_POINTS = {
+  single: 240,
+  '64': 240,
+  double: 480,
+};
+
+// Max cards of each rank per deck type (across all 4 suits)
+const CARD_COUNTS_PER_DECK = {
+  single: { A: 8, '10': 8, K: 8, Q: 8, J: 8 },
+  '64': { A: 8, '10': 8, K: 8, Q: 8, J: 8 },
+  double: { A: 16, '10': 16, K: 16, Q: 16, J: 16 },
+};
+
 const QUICK_BIDS = [200, 250, 300, 350, 400];
 
 const HOUSE_RULE_PRESETS = {
@@ -149,3 +163,15 @@ function getPhases() {
 
 const STORAGE_KEY = 'pinochle-scorer-state';
 const THEME_STORAGE_KEY = 'pinochle-scorer-theme';
+
+const Prefs = {
+  _prefix: 'pinochle-pref-',
+  get(key, defaultVal) {
+    const val = localStorage.getItem(this._prefix + key);
+    if (val === null) return defaultVal;
+    try { return JSON.parse(val); } catch { return val; }
+  },
+  set(key, val) {
+    localStorage.setItem(this._prefix + key, JSON.stringify(val));
+  },
+};

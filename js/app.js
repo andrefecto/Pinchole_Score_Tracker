@@ -19,6 +19,32 @@ const App = {
         e.preventDefault();
       }
     });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && GameState.hasActiveGame()) {
+        this.acquireWakeLock();
+      }
+    });
+  },
+
+  // ---- Wake Lock ----
+  _wakeLock: null,
+
+  async acquireWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+      this._wakeLock = await navigator.wakeLock.request('screen');
+      this._wakeLock.addEventListener('release', () => { this._wakeLock = null; });
+    } catch (e) {
+      // Wake lock request failed (e.g. low battery)
+    }
+  },
+
+  releaseWakeLock() {
+    if (this._wakeLock) {
+      this._wakeLock.release();
+      this._wakeLock = null;
+    }
   },
 
   // ---- Theme ----
@@ -79,6 +105,15 @@ const App = {
       document.getElementById('modal-help').classList.remove('active');
     });
 
+    // History modal
+    document.getElementById('btn-history').addEventListener('click', () => {
+      UI.renderDetailedHistory();
+      document.getElementById('modal-history').classList.add('active');
+    });
+    document.getElementById('btn-close-history').addEventListener('click', () => {
+      document.getElementById('modal-history').classList.remove('active');
+    });
+
     // About modal
     document.getElementById('btn-about').addEventListener('click', () => {
       document.getElementById('modal-about').classList.add('active');
@@ -110,6 +145,15 @@ const App = {
       document.getElementById('import-file').click();
     });
     document.getElementById('import-file').addEventListener('change', (e) => this.importGame(e));
+
+    // Card counting preference
+    const cardCountPref = document.getElementById('pref-card-counting');
+    if (cardCountPref) {
+      cardCountPref.checked = Prefs.get('cardCounting', false);
+      cardCountPref.addEventListener('change', (e) => {
+        Prefs.set('cardCounting', e.target.checked);
+      });
+    }
 
     // New Game
     document.getElementById('btn-new-game').addEventListener('click', () => {
@@ -358,10 +402,63 @@ const App = {
   showSetup() {
     UI.showScreen('screen-setup');
     document.getElementById('bottom-bar').classList.add('hidden');
+    document.getElementById('btn-history').classList.add('hidden');
+    this.releaseWakeLock();
+    this.syncSetupUI();
+  },
+
+  syncSetupUI() {
+    const config = GameState.state.config;
+
+    // Player count buttons
+    document.querySelectorAll('.player-count-btn').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.count) === config.playerCount);
+    });
+
+    // Deck type
+    document.querySelectorAll('[data-deck]').forEach(b => {
+      b.classList.toggle('active', b.dataset.deck === config.deckType);
+    });
+
+    // Game type
+    document.querySelectorAll('[data-gametype]').forEach(b => {
+      b.classList.toggle('active', b.dataset.gametype === config.gameType);
+    });
+
+    // Scoring system
+    document.querySelectorAll('[data-scoring]').forEach(b => {
+      b.classList.toggle('active', b.dataset.scoring === config.scoringSystem);
+    });
+
+    // House rules
+    document.querySelectorAll('[data-rules]').forEach(b => {
+      b.classList.toggle('active', b.dataset.rules === config.houseRules);
+    });
+    this.populateRuleControls(config.houseRules);
+
+    // Target score
+    const targetEl = document.getElementById('target-score');
+    if (targetEl) targetEl.value = config.targetScore;
+
+    // Game type visibility
+    this.updateGameTypeVisibility(config.playerCount);
+
+    // Partnership section
+    const partSection = document.getElementById('partnership-section');
+    if (config.gameType === 'partnership') {
+      partSection.classList.remove('hidden');
+    } else {
+      partSection.classList.add('hidden');
+    }
+
+    // Player name inputs
+    UI.renderPlayerNameInputs(config.playerCount);
   },
 
   showGame() {
     UI.showScreen('screen-game');
+    document.getElementById('btn-history').classList.remove('hidden');
+    this.acquireWakeLock();
     UI.renderGame();
     this.bindGameEvents();
   },
@@ -549,6 +646,17 @@ const App = {
       UI.renderGame();
     }
 
+    // Auto-fill other player's cards
+    if (target.dataset.autofillFrom !== undefined) {
+      const knownPlayerId = parseInt(target.dataset.autofillFrom);
+      const otherPlayer = GameState.state.players.find(p => p.id !== knownPlayerId);
+      if (otherPlayer && confirm(`Auto-fill ${otherPlayer.name}'s cards based on ${GameState.getPlayerName(knownPlayerId)}'s counts?`)) {
+        GameState.autoFillOtherPlayerCards(knownPlayerId);
+        UI.renderGame();
+      }
+      return;
+    }
+
     // Last trick
     if (target.dataset.lastTrick !== undefined) {
       GameState.setLastTrick(parseInt(target.dataset.lastTrick));
@@ -605,6 +713,15 @@ const App = {
       // Check for winner
       const winner = GameState.checkWinner();
       if (winner) {
+        if (winner.type === 'extended') {
+          // Both players reached target - extend and continue
+          this.showTargetExtended(winner.newTarget);
+          GameState.startNewRound();
+          UI.selectedMeldPlayer = 0;
+          UI.renderGame();
+          this.bindGameEvents();
+          return;
+        }
         this.showWinner(winner);
         return;
       }
@@ -620,12 +737,26 @@ const App = {
     // Advance to next phase
     const nextPhase = phases[currentIdx + 1];
     GameState.setPhase(nextPhase);
+
+    // Auto-enable card counting in 2-player play phase if preference is set
+    if (nextPhase === 'play' && isTwoPlayerMode() && Prefs.get('cardCounting', false)) {
+      GameState.state.currentRound.scores.forEach(score => {
+        if (!score.cardCounts) {
+          score.cardCounts = {};
+          CARD_POINT_VALUES.forEach(c => { score.cardCounts[c.rank] = 0; });
+          score.trickPoints = 0;
+        }
+      });
+      GameState.save();
+    }
+
     UI.renderGame();
   },
 
   handleUndo() {
     if (GameState.undo()) {
       UI.renderGame();
+      this.bindGameEvents();
     }
   },
 
@@ -653,6 +784,18 @@ const App = {
     document.getElementById('bottom-bar').classList.add('hidden');
     UI.renderScoreboard();
     UI.renderHistory();
+  },
+
+  showTargetExtended(newTarget) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = `Both players reached the target! New target: ${newTarget}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('visible'), 10);
+    setTimeout(() => {
+      toast.classList.remove('visible');
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
   },
 
   buildFinalStandingsHTML() {

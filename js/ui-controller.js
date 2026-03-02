@@ -443,6 +443,11 @@ const UI = {
             });
             html += '</div>';
             html += `<div class="card-count-total">Total: ${score.trickPoints}</div>`;
+            // Auto-fill button for the OTHER player
+            const otherPlayer = GameState.state.players.find(op => op.id !== p.id);
+            if (otherPlayer) {
+              html += `<button class="btn btn-secondary btn-sm mt-8" data-autofill-from="${p.id}">Auto-fill ${otherPlayer.name}'s Cards</button>`;
+            }
           }
           html += '</div>';
         }
@@ -646,6 +651,127 @@ const UI = {
         });
       }
       html += '</div></div>';
+    });
+
+    container.innerHTML = html;
+  },
+
+  // ---- Detailed History Modal ----
+  renderDetailedHistory() {
+    const container = document.getElementById('detailed-history-content');
+    if (!container) return;
+
+    if (GameState.state.rounds.length === 0) {
+      container.innerHTML = '<p style="padding:12px; color:var(--text-muted)">No completed rounds yet.</p>';
+      return;
+    }
+
+    const partnership = isPartnershipMode();
+    const melds = GameState.getAvailableMelds();
+    const bonus = GameState.getLastTrickBonus();
+    let runningTotals = {};
+
+    // Initialize running totals
+    GameState.state.players.forEach(p => { runningTotals[p.id] = 0; });
+
+    let html = '';
+    GameState.state.rounds.forEach(round => {
+      const isTwoPlayer = GameState.state.config.playerCount === 2;
+      const roundInfo = isTwoPlayer
+        ? `Trump: ${round.trump || '?'}`
+        : `Bidder: ${GameState.getPlayerName(round.bidder)} &mdash; Bid: ${round.bid} &mdash; Trump: ${round.trump || '?'}`;
+
+      html += `<div class="history-detail-card">`;
+      html += `<div class="history-detail-header">
+                <strong>Round ${round.roundNumber}</strong>
+                <span>${roundInfo}</span>
+              </div>`;
+
+      if (partnership) {
+        GameState.state.config.partnerships.forEach(team => {
+          const teamMeld = team.players.reduce((sum, pid) => {
+            const s = round.scores.find(sc => sc.playerId === pid);
+            return sum + (s ? s.meld : 0);
+          }, 0);
+          const teamTricks = team.players.reduce((sum, pid) => {
+            const s = round.scores.find(sc => sc.playerId === pid);
+            if (!s) return sum;
+            let tp = s.trickPoints;
+            if (s.lastTrick) tp += bonus;
+            return sum + tp;
+          }, 0);
+          const teamRoundTotal = team.players.reduce((sum, pid) => {
+            const s = round.scores.find(sc => sc.playerId === pid);
+            return sum + (s ? s.total : 0);
+          }, 0);
+
+          // Update running totals
+          team.players.forEach(pid => {
+            const s = round.scores.find(sc => sc.playerId === pid);
+            runningTotals[pid] += s ? s.total : 0;
+          });
+          const teamRunning = team.players.reduce((sum, pid) => sum + runningTotals[pid], 0);
+
+          const bidderScore = round.scores.find(s => s.playerId === round.bidder);
+          const isBidderTeam = team.players.includes(round.bidder);
+          const setLabel = isBidderTeam && bidderScore && bidderScore.madeBid === false ? ' <span class="badge-set" style="padding:1px 6px;border-radius:8px;font-size:0.7rem">SET</span>' : '';
+
+          html += `<div class="history-detail-player">
+                    <div class="history-detail-player-name">${team.name}${setLabel}</div>
+                    <div class="history-detail-melds">`;
+          team.players.forEach(pid => {
+            const s = round.scores.find(sc => sc.playerId === pid);
+            if (s && s.meldItems.length > 0) {
+              s.meldItems.forEach(item => {
+                const meldDef = melds.find(m => m.id === item.type);
+                const name = item.type === 'manual' ? 'Manual' : (meldDef ? meldDef.name : item.type);
+                html += `<span class="history-meld-chip">${name} +${item.value}</span>`;
+              });
+            }
+          });
+          html += `</div>
+                    <div class="history-detail-stats">
+                      <span>Meld: ${teamMeld}</span>
+                      <span>Tricks: ${teamTricks}</span>
+                      <span>Round: ${teamRoundTotal}</span>
+                      <span><strong>Total: ${teamRunning}</strong></span>
+                    </div>
+                  </div>`;
+        });
+      } else {
+        round.scores.forEach(s => {
+          const player = GameState.state.players[s.playerId];
+          if (!player) return;
+
+          runningTotals[s.playerId] += s.total;
+
+          let trickTotal = s.trickPoints;
+          if (s.lastTrick) trickTotal += bonus;
+
+          const setLabel = s.madeBid === false ? ' <span class="badge-set" style="padding:1px 6px;border-radius:8px;font-size:0.7rem">SET</span>' : '';
+
+          html += `<div class="history-detail-player" style="border-left: 3px solid ${player.color}">
+                    <div class="history-detail-player-name">${player.name}${setLabel}</div>
+                    <div class="history-detail-melds">`;
+          if (s.meldItems && s.meldItems.length > 0) {
+            s.meldItems.forEach(item => {
+              const meldDef = melds.find(m => m.id === item.type);
+              const name = item.type === 'manual' ? 'Manual' : (meldDef ? meldDef.name : item.type);
+              html += `<span class="history-meld-chip">${name} +${item.value}</span>`;
+            });
+          }
+          html += `</div>
+                    <div class="history-detail-stats">
+                      <span>Meld: ${s.meld}</span>
+                      <span>Tricks: ${trickTotal}</span>
+                      <span>Round: ${s.total}</span>
+                      <span><strong>Total: ${runningTotals[s.playerId]}</strong></span>
+                    </div>
+                  </div>`;
+        });
+      }
+
+      html += '</div>';
     });
 
     container.innerHTML = html;

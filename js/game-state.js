@@ -157,6 +157,7 @@ const GameState = {
 
   // ---- Rounds ----
   startNewRound() {
+    this.pushUndo();
     const roundNumber = this.state.rounds.length + 1;
     this.state.currentRound = {
       roundNumber,
@@ -174,12 +175,12 @@ const GameState = {
         madeBid: null,
       })),
     };
-    this.state.undoStack = [];
     this.save();
   },
 
   setPhase(phase) {
     if (this.state.currentRound) {
+      this.pushUndo();
       this.state.currentRound.phase = phase;
       this.save();
     }
@@ -288,13 +289,19 @@ const GameState = {
     const score = this.state.currentRound.scores.find(s => s.playerId === playerId);
     if (score) {
       if (score.cardCounts) {
-        // Switching to manual — keep current trickPoints, clear card counts
+        // Switching to manual — save current card counts, keep trickPoints
+        score._savedCardCounts = { ...score.cardCounts };
         score.cardCounts = null;
       } else {
-        // Switching to card counting — initialize counts, reset trick points
-        score.cardCounts = {};
-        CARD_POINT_VALUES.forEach(c => { score.cardCounts[c.rank] = 0; });
-        score.trickPoints = 0;
+        // Switching to card counting — restore saved counts if available
+        if (score._savedCardCounts) {
+          score.cardCounts = { ...score._savedCardCounts };
+          score.trickPoints = this.calculateTrickPointsFromCards(score.cardCounts);
+        } else {
+          score.cardCounts = {};
+          CARD_POINT_VALUES.forEach(c => { score.cardCounts[c.rank] = 0; });
+          score.trickPoints = 0;
+        }
       }
     }
     this.save();
@@ -411,6 +418,8 @@ const GameState = {
     const round = this.state.currentRound;
     if (!round) return;
 
+    this.pushUndo();
+
     // Update totals
     round.scores.forEach(score => {
       const total = this.state.totals.find(t => t.playerId === score.playerId);
@@ -428,6 +437,7 @@ const GameState = {
   // ---- Winners ----
   checkWinner() {
     const target = this.state.config.targetScore;
+
     if (this.state.config.gameType === 'partnership') {
       // Check team totals
       const teamTotals = {};
@@ -438,31 +448,84 @@ const GameState = {
           teamTotals[player.team] += t.total;
         }
       });
-      for (const [team, total] of Object.entries(teamTotals)) {
-        if (total >= target) {
-          const partnership = this.state.config.partnerships.find(p => p.team === parseInt(team));
+
+      const winningTeams = Object.entries(teamTotals).filter(([, total]) => total >= target);
+
+      if (winningTeams.length === 0) return null;
+
+      // If bidder's team is among winners, bidder's team wins
+      const lastRound = this.state.rounds[this.state.rounds.length - 1];
+      if (lastRound && lastRound.bidder !== null) {
+        const bidderTeam = this.state.players[lastRound.bidder].team;
+        const bidderTeamEntry = winningTeams.find(([team]) => parseInt(team) === bidderTeam);
+        if (bidderTeamEntry) {
+          const partnership = this.state.config.partnerships.find(p => p.team === bidderTeam);
           return {
             type: 'team',
-            team: parseInt(team),
-            name: partnership ? partnership.name : `Team ${parseInt(team) + 1}`,
-            score: total,
+            team: bidderTeam,
+            name: partnership ? partnership.name : `Team ${bidderTeam + 1}`,
+            score: bidderTeamEntry[1],
           };
         }
       }
-    } else {
-      for (const t of this.state.totals) {
-        if (t.total >= target) {
-          const player = this.state.players[t.playerId];
-          return {
-            type: 'player',
-            playerId: t.playerId,
-            name: player.name,
-            score: t.total,
-          };
-        }
+
+      // Otherwise highest team score wins
+      winningTeams.sort((a, b) => b[1] - a[1]);
+      const [team, total] = winningTeams[0];
+      const partnership = this.state.config.partnerships.find(p => p.team === parseInt(team));
+      return {
+        type: 'team',
+        team: parseInt(team),
+        name: partnership ? partnership.name : `Team ${parseInt(team) + 1}`,
+        score: total,
+      };
+    }
+
+    // Individual mode
+    const winners = this.state.totals.filter(t => t.total >= target);
+    if (winners.length === 0) return null;
+
+    if (isTwoPlayerMode()) {
+      // 2-player: if both reach target, extend by 250
+      if (winners.length >= 2) {
+        this.state.config.targetScore += 250;
+        this.save();
+        return { type: 'extended', newTarget: this.state.config.targetScore };
+      }
+      // Exactly one winner
+      const player = this.state.players[winners[0].playerId];
+      return {
+        type: 'player',
+        playerId: winners[0].playerId,
+        name: player.name,
+        score: winners[0].total,
+      };
+    }
+
+    // 3+ player individual: bidder wins ties
+    const lastRound = this.state.rounds[this.state.rounds.length - 1];
+    if (lastRound && lastRound.bidder !== null && winners.length > 1) {
+      const bidderWinner = winners.find(w => w.playerId === lastRound.bidder);
+      if (bidderWinner) {
+        const player = this.state.players[bidderWinner.playerId];
+        return {
+          type: 'player',
+          playerId: bidderWinner.playerId,
+          name: player.name,
+          score: bidderWinner.total,
+        };
       }
     }
-    return null;
+
+    // Highest score wins
+    winners.sort((a, b) => b.total - a.total);
+    const player = this.state.players[winners[0].playerId];
+    return {
+      type: 'player',
+      playerId: winners[0].playerId,
+      name: player.name,
+      score: winners[0].total,
+    };
   },
 
   // ---- Meld Definitions ----
@@ -509,23 +572,60 @@ const GameState = {
 
   // ---- Undo ----
   pushUndo() {
-    if (this.state.currentRound) {
-      this.state.undoStack.push(JSON.stringify(this.state.currentRound));
-      // Cap undo stack
-      if (this.state.undoStack.length > 50) {
-        this.state.undoStack.shift();
-      }
+    const snapshot = {
+      currentRound: this.state.currentRound ? JSON.parse(JSON.stringify(this.state.currentRound)) : null,
+      totals: JSON.parse(JSON.stringify(this.state.totals)),
+      rounds: JSON.parse(JSON.stringify(this.state.rounds)),
+    };
+    this.state.undoStack.push(snapshot);
+    // Cap undo stack
+    if (this.state.undoStack.length > 50) {
+      this.state.undoStack.shift();
     }
   },
 
   undo() {
     if (this.state.undoStack.length > 0) {
       const prev = this.state.undoStack.pop();
-      this.state.currentRound = JSON.parse(prev);
+      this.state.currentRound = prev.currentRound;
+      this.state.totals = prev.totals;
+      this.state.rounds = prev.rounds;
       this.save();
       return true;
     }
     return false;
+  },
+
+  // ---- Auto-fill (2-player) ----
+  autoFillOtherPlayerCards(knownPlayerId) {
+    if (!isTwoPlayerMode()) return false;
+    const round = this.state.currentRound;
+    if (!round) return false;
+
+    const knownScore = round.scores.find(s => s.playerId === knownPlayerId);
+    if (!knownScore || !knownScore.cardCounts) return false;
+
+    const otherScore = round.scores.find(s => s.playerId !== knownPlayerId);
+    if (!otherScore) return false;
+
+    this.pushUndo();
+
+    const deckType = this.state.config.deckType;
+    const maxCounts = CARD_COUNTS_PER_DECK[deckType];
+
+    // Initialize card counts for other player if needed
+    if (!otherScore.cardCounts) {
+      otherScore.cardCounts = {};
+    }
+
+    CARD_POINT_VALUES.forEach(card => {
+      const knownCount = knownScore.cardCounts[card.rank] || 0;
+      otherScore.cardCounts[card.rank] = (maxCounts[card.rank] || 0) - knownCount;
+    });
+
+    otherScore.trickPoints = this.calculateTrickPointsFromCards(otherScore.cardCounts);
+    this.save();
+    return true;
   },
 
   // ---- Helpers ----
