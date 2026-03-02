@@ -12,6 +12,8 @@ const App = {
 
     this.bindGlobalEvents();
 
+    this.initInstallBanner();
+
     if (typeof CloudSave !== 'undefined') CloudSave.init();
 
     window.addEventListener('beforeunload', (e) => {
@@ -24,6 +26,72 @@ const App = {
       if (document.visibilityState === 'visible' && GameState.hasActiveGame()) {
         this.acquireWakeLock();
       }
+    });
+  },
+
+  // ---- Install Banner ----
+  _deferredPrompt: null,
+
+  initInstallBanner() {
+    // Skip if already dismissed or already running as installed PWA
+    if (Prefs.get('installDismissed', false)) return;
+    if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) return;
+
+    const banner = document.getElementById('install-banner');
+    const installBtn = document.getElementById('install-banner-btn');
+    const dismissBtn = document.getElementById('install-banner-dismiss');
+    const bannerText = document.getElementById('install-banner-text');
+
+    const showBanner = () => {
+      banner.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => banner.classList.add('visible'));
+      });
+    };
+
+    const hideBanner = () => {
+      banner.classList.remove('visible');
+      banner.addEventListener('transitionend', () => banner.classList.add('hidden'), { once: true });
+    };
+
+    // Chrome / Edge: capture beforeinstallprompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this._deferredPrompt = e;
+      showBanner();
+    });
+
+    // iOS detection (no beforeinstallprompt support)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+      bannerText.textContent = "Add to Home Screen: tap Share then \u201CAdd to Home Screen\u201D";
+      installBtn.classList.add('hidden');
+      showBanner();
+    }
+
+    // Install button click
+    installBtn.addEventListener('click', async () => {
+      if (!this._deferredPrompt) return;
+      this._deferredPrompt.prompt();
+      const { outcome } = await this._deferredPrompt.userChoice;
+      this._deferredPrompt = null;
+      if (outcome === 'accepted') {
+        hideBanner();
+        Prefs.set('installDismissed', true);
+      }
+    });
+
+    // Dismiss button
+    dismissBtn.addEventListener('click', () => {
+      hideBanner();
+      Prefs.set('installDismissed', true);
+    });
+
+    // App installed event
+    window.addEventListener('appinstalled', () => {
+      hideBanner();
+      Prefs.set('installDismissed', true);
+      this._deferredPrompt = null;
     });
   },
 
